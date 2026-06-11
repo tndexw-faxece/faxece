@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>割草援军 - 多角色版</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; user-select: none; -webkit-user-select: none; }
+  body { background: #050508; overflow: hidden; font-family: 'Microsoft YaHei', Arial, sans-serif; color: white; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  
+  #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+  .pointer { pointer-events: auto; }
+  
+  .mode-panel {
+    position: absolute; top: 10px; right: 10px;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+    pointer-events: auto; z-index: 10;
+  }
+  .mode-row { display: flex; gap: 8px; }
+  .mode-btn {
+    padding: 8px 16px; border: 2px solid #444; border-radius: 8px;
+    background: rgba(20,20,25,0.95); color: #aaa; font-size: 13px; font-weight: bold;
+    transition: all 0.2s;
+  }
+  .mode-btn.active-attack { border-color: #ff4444; color: #ff4444; background: rgba(60,20,20,0.95); box-shadow: 0 0 10px #ff444455; }
+  .mode-btn.active-defend { border-color: #44aaff; color: #44aaff; background: rgba(20,30,60,0.95); box-shadow: 0 0 10px #44aaff55; }
+  
+  #upgrade-btn {
+    position: absolute; top: 148px; right: 10px; pointer-events: auto; z-index: 10;
+    padding: 10px 18px; background: linear-gradient(135deg, #ffaa00, #ff7700);
+    border: none; border-radius: 10px; color: white; font-size: 15px; font-weight: bold;
+    box-shadow: 0 4px 12px rgba(255,170,0,0.4); display: none; animation: pulse 1.2s infinite;
+  }
+  @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }
+  
+  #upgrade-panel {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 96%; max-width: 640px; max-height: 88vh; overflow-y: auto;
+    background: rgba(8,8,14,0.98); border: 2px solid #555; border-radius: 16px;
+    padding: 16px; display: none; pointer-events: auto; box-shadow: 0 0 50px rgba(0,0,0,0.9);
+    z-index: 100;
+  }
+  #upgrade-panel h2 { text-align: center; margin-bottom: 12px; font-size: 18px; color: #ffcc00; }
+  .upgrade-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  @media (max-width: 380px) { .upgrade-grid { grid-template-columns: repeat(3, 1fr); } }
+  
+  .up-card {
+    background: linear-gradient(180deg, #1e1e24, #16161a); border: 1px solid #444; border-radius: 8px;
+    padding: 8px 4px; text-align: center; cursor: pointer; transition: all 0.15s;
+    position: relative; overflow: hidden; min-height: 76px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    -webkit-touch-callout: none;
+  }
+  .up-card:active { transform: scale(0.95); }
+  .up-card.disabled { opacity: 0.35; pointer-events: none; border-color: #333; filter: grayscale(0.6); }
+  .up-card.holding { border-color: #ffcc00; box-shadow: 0 0 8px rgba(255,200,0,0.3); }
+  
+  .up-icon { font-size: 20px; margin-bottom: 2px; }
+  .up-name { font-size: 11px; color: #ddd; margin-bottom: 1px; font-weight: bold; line-height: 1.2; }
+  .up-lvl { font-size: 10px; color: #ffcc00; margin-bottom: 2px; font-weight: bold; }
+  .up-desc { font-size: 9px; color: #88ff88; line-height: 1.2; padding: 0 2px; }
+  .up-cost { position: absolute; top: 3px; right: 4px; font-size: 10px; color: #ff3333; font-weight: bold; background: rgba(0,0,0,0.5); padding: 1px 4px; border-radius: 4px; }
+  
+  #close-panel {
+    position: absolute; top: 6px; right: 8px; background: #ff3333; border: none; color: white;
+    padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; pointer-events: auto; z-index: 101;
+  }
+  
+  #hud {
+    position: absolute; top: 10px; left: 10px; pointer-events: none;
+    font-size: 12px; line-height: 1.6; color: #ccc; text-shadow: 0 1px 4px black; z-index: 10;
+  }
+  #hud span { color: #fff; font-weight: bold; }
+  .hp-bar { width: 120px; height: 9px; background: #222; border-radius: 4px; margin-top: 3px; overflow: hidden; border: 1px solid #444; }
+  .hp-fill { height: 100%; background: linear-gradient(90deg, #ff4444, #ff8844); width: 100%; transition: width 0.2s; }
+  .xp-bar { width: 120px; height: 5px; background: #222; border-radius: 3px; margin-top: 4px; overflow: hidden; border: 1px solid #444; }
+  .xp-fill { height: 100%; background: linear-gradient(90deg, #4488ff, #44ffaa); width: 0%; transition: width 0.2s; }
+  
+  .hint { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); color: #888; font-size: 11px; pointer-events: none; text-align: center; }
+  
+  .select-screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(5,5,10,0.98); z-index: 500;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    pointer-events: auto;
+  }
+  .select-screen h1 { color: #ffcc00; margin-bottom: 20px; font-size: 26px; letter-spacing: 2px; text-shadow: 0 0 12px rgba(255,200,0,0.4); }
+  .select-list { display: flex; flex-direction: column; gap: 10px; width: 85%; max-width: 420px; }
+  .select-card {
+    padding: 12px 14px; border: 2px solid; border-radius: 10px;
+    background: rgba(30,30,35,0.95); color: white; font-size: 15px; font-weight: bold;
+    cursor: pointer; transition: all 0.15s; text-align: center; line-height: 1.4;
+  }
+  .select-card:active { transform: scale(0.97); }
+  .select-card small { font-size: 11px; font-weight: normal; display: block; margin-top: 2px; opacity: 0.8; }
+  .back-btn { margin-top: 14px; padding: 8px 18px; background: #333; border: 1px solid #666; color: #aaa; border-radius: 6px; pointer-events: auto; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<<canvas id="gameCanvas"></canvas>
+
+<div id="ui-layer">
+  <div id="hud">
+    <div>等级: <span id="hud-lvl">1</span> | 技能点: <span id="hud-points" style="color:#ffcc00">0</span></div>
+    <div>援军: <span id="hud-allies">0</span>/<span id="hud-cap">10</span> <span id="hud-skulls" style="color:#aaa">(骷髅:0)</span> | 击杀: <span id="hud-kills">0</span></div>
+    <div class="hp-bar"><div class="hp-fill" id="hp-fill"></div></div>
+    <div class="xp-bar"><div class="xp-fill" id="xp-fill"></div></div>
+    <div style="font-size:10px;color:#888;margin-top:3px">工厂: <span id="hud-fact">1</span> | 范围: <span id="hud-range">28</span></div>
+    <div style="font-size:10px;color:#ff5555;margin-top:2px">BOSS降临: <span id="hud-boss">60</span>s</div>
+    <div id="mode-tag" style="font-size:10px;color:#ffaa55;margin-top:2px"></div>
+  </div>
+  
+  <div class="mode-panel pointer">
+    <div class="mode-row">
+      <button id="btn-attack" class="mode-btn active-attack">进攻</button>
+      <button id="btn-defend" class="mode-btn">防御</button>
+    </div>
+    <button id="btn-factory" class="mode-btn" style="border-color:#44ff44; color:#44ff44;">暂停生产</button>
+  </div>
+  
+  <button id="upgrade-btn" class="pointer">升级 (<span id="btn-points">0</span>)</button>
+  
+  <div id="upgrade-panel">
+    <button id="close-panel">关闭</button>
+    <h2>技能加点 | 长按2秒连续升级</h2>
+    <div class="upgrade-grid" id="upgrade-grid"></div>
+  </div>
+  
+  <div class="hint">左半屏拖动移动 | 右上角切换模式/生产 | 升级按钮自由加点</div>
+</div>
+
+<div id="mode-select" class="select-screen">
+  <h1>选择模式</h1>
+  <div class="select-list">
+    <button class="select-card" style="border-color:#666;" onclick="selectMode('classic')">
+      经典模式 <small>正常难度，标准成长</small>
+    </button>
+    <button class="select-card" style="border-color:#ff8800; color:#ffcc66;" onclick="selectMode('endless')">
+      无限火力 <small>敌军出兵×5倍，所有升级固定消耗1点</small>
+    </button>
+    <button class="select-card" style="border-color:#ff0044; color:#ff88aa;" onclick="selectMode('nightmare')">
+      噩梦模式 <small>初始20级，敌人生命/攻击×20（速度不变）</small>
+    </button>
+    <button class="select-card" style="border-color:#ff0000; background:rgba(40,10,10,0.95); color:#ff5555;" onclick="selectMode('nightmare_endless')">
+      噩梦无限火力 <small>噩梦难度 + 无限火力机制</small>
+    </button>
+  </div>
+</div>
+
+<div id="char-select" class="select-screen" style="display:none;">
+  <h1>选择角色</h1>
+  <div class="select-list">
+    <button class="select-card" style="border-color:#4488ff; color:#88ccff;" onclick="startGame('classic')">
+      🔫 经典枪手 <small>无特殊技能，平衡发展</small>
+    </button>
+    <button class="select-card" style="border-color:#aa66ff; color:#cc99ff;" onclick="startGame('necromancer')">
+      🪄 亡灵法师 <small>死者复苏：击杀转化为骷髅（1/10属性），不占援军名额</small>
+    </button>
+    <button class="select-card" style="border-color:#ff4444; color:#ff8888;" onclick="startGame('berserker')">
+      🪓 狂战士 <small>血量与攻击×5，正面碾压</small>
+    </button>
+  </div>
+  <button class="back-btn" onclick="backToMode()">返回</button>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const WORLD_W = 4000;
+const WORLD_H = 4000;
+const XP_NEED = 60;
+
+const MODE_CONFIG = {
+  classic:        { label: '经典模式', spawnMult: 1, costFixed: false, startLevel: 1,  startPoints: 0,  enemyHpMult: 1,  enemyDmgMult: 1,  zoom: 0.75 },
+  endless:        { label: '无限火力', spawnMult: 5, costFixed: true,  startLevel: 1,  startPoints: 0,  enemyHpMult: 1,  enemyDmgMult: 1,  zoom: 0.75 },
+  nightmare:      { label: '噩梦模式', spawnMult: 1, costFixed: false, startLevel: 20, startPoints: 50, enemyHpMult: 20, enemyDmgMult: 20, zoom: 0.75 },
+  nightmare_endless: { label: '噩梦无限火力', spawnMult: 5, costFixed: true, startLevel: 20, startPoints: 50, enemyHpMult: 20, enemyDmgMult: 20, zoom: 0.75 }
+};
+
+const CHAR_CONFIG = {
+  classic:      { name: '经典枪手', type: 'classic', hpMult: 1, dmgMult: 1, color: '#4488ff' },
+  necromancer:  { name: '亡灵法师', type: 'necromancer', hpMult: 1, dmgMult: 1, color: '#aa66ff' },
+  berserker:    { name: '狂战士', type: 'berserker', hpMult: 5, dmgMult: 5, color: '#ff4444' }
+};
+
+let selectedMode = 'classic';
+let gameMode = 'classic';
+let modeConfig = MODE_CONFIG.classic;
+let playerChar = 'classic';
+let charConfig = CHAR_CONFIG.classic;
+
+function selectMode(mode) {
+  selectedMode = mode;
+  document.getElementById('mode-select').style.display = 'none';
+  document.getElementById('char-select').style.display = 'flex';
+}
+function backToMode() {
+  document.getElementById('char-select').style.display = 'none';
+  document.getElementById('mode-select').style.display = 'flex';
+}
+function startGame(charType) {
+  gameMode = selectedMode;
+  modeConfig = MODE_CONFIG[selectedMode];
+  playerChar = charType;
+  charConfig = CHAR_CONFIG[charType];
+  document.getElementById('char-select').style.display = 'none';
+  document.getElementById('mode-tag').textContent = modeConfig.label + ' | ' + charConfig.name;
+  init();
+}
+
+let gameTime = 0;
+let kills = 0;
+let skillPoints = 0;
+let playerLevel = 1;
+let xp = 0;
+let mode = 'attack';
+let factoryPaused = false;
+let bossTimer = 60;
+
+let baseAllyCap = 10;
+let allyCapBonus = 0;
+let meleeRangeMult = 1;
+
+let player;
+let enemies = [];
+let allies = [];
+let factories = [];
+let projectiles = [];
+let xpOrbs = [];
+let particles = [];
+let damageTexts = [];
+
+let joystick = { active: false, dx: 0, dy: 0, id: null, originX: 0, originY: 0, currX: 0, currY: 0 };
+let camera = { x: 0, y: 0 };
+
+const upgradeDefs = [
+  { id: 'p_hp', icon: '❤️', name: '生命上限', descFn: l=>`+20%生命`, apply: ()=>{
+    player.maxHp = Math.floor(100 * Math.pow(1.2, upgradeLevels['p_hp']) * charConfig.hpMult);
+    player.hp += Math.floor(player.maxHp * 0.15);
+    if(player.hp > player.maxHp) player.hp = player.maxHp;
+  }},
+  { id: 'p_regen', icon: '💚', name: '生命恢复', descFn: l=>`+1.0/s`, apply: ()=>{
+    player.regen = upgradeLevels['p_regen'] * 1.0;
+  }},
+  { id: 'p_dmg', icon: '⚔️', name: '玩家攻击', descFn: l=>`+20%伤害`, apply: ()=>{
+    player.dmgMult = Math.pow(1.2, upgradeLevels['p_dmg']);
+  }},
+  { id: 'p_spd', icon: '👟', name: '移动速度', descFn: l=>`+8%移速`, apply: ()=>{
+    player.speed = 160 * Math.pow(1.08, upgradeLevels['p_spd']);
+  }},
+  { id: 'p_atk', icon: '🔥', name: '攻击速度', descFn: l=>`-10%间隔`, apply: ()=>{
+    player.atkIntervalMult = Math.pow(0.9, upgradeLevels['p_atk']);
+  }},
+  { id: 'p_lifesteal', icon: '🩸', name: '生命偷取', descFn: l=>`+2%吸血`, apply: ()=>{} },
+  { id: 'p_crit', icon: '💥', name: '暴击几率', descFn: l=>`+3%暴击`, apply: ()=>{} },
+  { id: 'p_def', icon: '🛡️', name: '伤害减免', descFn: l=>`+3%减伤`, apply: ()=>{} },
+  { id: 'f_count', icon: '🏭', name: '工厂数量', descFn: l=>`+1工厂`, apply: ()=>{ spawnFactory(); } },
+  { id: 'f_spd', icon: '⚡', name: '工厂效率', descFn: l=>`-12%间隔`, apply: ()=>{} },
+  { id: 'a_cap', icon: '👥', name: '援军上限', descFn: l=>`+4上限`, apply: ()=>{
+    allyCapBonus = upgradeLevels['a_cap'] * 4;
+  }},
+  { id: 'a_hp', icon: '🛡️', name: '援军生命', descFn: l=>`+25%生命`, apply: ()=>{
+    let mult = Math.pow(1.25, upgradeLevels['a_hp']);
+    allies.forEach(a=>{ if(!a.isSkull) { a.maxHp = Math.floor(30*mult); if(a.hp>a.maxHp)a.hp=a.maxHp; } });
+  }},
+  { id: 'a_dmg', icon: '🗡️', name: '援军攻击', descFn: l=>`+20%伤害`, apply: ()=>{
+    let mult = Math.pow(1.2, upgradeLevels['a_dmg']);
+    allies.forEach(a=>{ if(!a.isSkull) a.dmg = Math.floor(12*mult); });
+  }},
+  { id: 'a_spd', icon: '💨', name: '援军移速', descFn: l=>`+10%移速`, apply: ()=>{
+    allies.forEach(a=>{ if(!a.isSkull) a.speed = 130 * Math.pow(1.1, upgradeLevels['a_spd']); });
+  }},
+  { id: 'a_atk', icon: '⏩', name: '援军攻速', descFn: l=>`-12%间隔`, apply: ()=>{} },
+  { id: 'a_lifesteal', icon: '❣️', name: '援军吸血', descFn: l=>`+1.5%吸血`, apply: ()=>{} },
+  { id: 'a_range', icon: '📏', name: '近战范围', descFn: l=>`+15%距离`, apply: ()=>{
+    meleeRangeMult = Math.pow(1.15, upgradeLevels['a_range']);
+  }},
+  { id: 'xp_rng', icon: '🧲', name: '拾取范围', descFn: l=>`+30%范围`, apply: ()=>{} },
+  { id: 'xp_gain', icon: '📚', name: '经验获取', descFn: l=>`+15%经验`, apply: ()=>{} },
+  { id: 'p_proj', icon: '☄️', name: '子弹速度', descFn: l=>`+10%弹速`, apply: ()=>{} }
+];
+
+let upgradeLevels = {};
+upgradeDefs.forEach(u => upgradeLevels[u.id] = 0);
+
+function getMaxAllies() { return baseAllyCap + allyCapBonus; }
+function countRealAllies() { return allies.filter(a => !a.isSkull).length; }
+function getMeleeRange() { return 28 * meleeRangeMult; }
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function init() {
+  gameTime = 0; kills = 0; xp = 0;
+  skillPoints = modeConfig.startPoints;
+  playerLevel = modeConfig.startLevel;
+  upgradeDefs.forEach(u => upgradeLevels[u.id] = 0);
+  baseAllyCap = 10; allyCapBonus = 0; meleeRangeMult = 1;
+  factoryPaused = false; bossTimer = 60;
+  
+  player = {
+    x: WORLD_W/2, y: WORLD_H/2, r: 14,
+    hp: 100 * charConfig.hpMult, maxHp: 100 * charConfig.hpMult,
+    speed: 160, regen: 0,
+    dmg: 14 * charConfig.dmgMult, dmgMult: 1,
+    atkRange: 180, atkCd: 0, atkInterval: 0.6, atkIntervalMult: 1,
+    facing: 0,
+    color: charConfig.color
+  };
+  
+  factories = []; enemies = []; allies = []; projectiles = []; xpOrbs = []; particles = []; damageTexts = [];
+  spawnFactory();
+  
+  for(let i=0; i<<10; i++) spawnEnemy();
+  
+  requestAnimationFrame(loop);
+}
+
+function spawnFactory() {
+  factories.push({ x: player.x, y: player.y, timer: 0, interval: 3, radius: 22 });
+}
+
+function spawnEnemy() {
+  let margin = 80;
+  let side = Math.floor(Math.random()*4);
+  let x, y;
+  if(side===0){ x = camera.x - margin; y = camera.y + Math.random()*canvas.height; }
+  else if(side===1){ x = camera.x + canvas.width + margin; y = camera.y + Math.random()*canvas.height; }
+  else if(side===2){ x = camera.x + Math.random()*canvas.width; y = camera.y - margin; }
+  else { x = camera.x + Math.random()*canvas.width; y = camera.y + canvas.height + margin; }
+  
+  x = Math.max(-150, Math.min(WORLD_W+150, x));
+  y = Math.max(-150, Math.min(WORLD_H+150, y));
+  
+  let isElite = Math.random() < Math.min(0.25, 0.05 + gameTime/300);
+  let isBoss = Math.random() < Math.min(0.02, gameTime/2000);
+  
+  let hp = isBoss ? 400 : (isElite ? 80 : 28);
+  let r = isBoss ? 28 : (isElite ? 18 : 12);
+  let dmg = isBoss ? 30 : (isElite ? 16 : 9);
+  let speed = isBoss ? 55 : (isElite ? 85 : 72);
+  
+  hp *= modeConfig.enemyHpMult;
+  dmg *= modeConfig.enemyDmgMult;
+  
+  let e = {
+    x, y, r, hp, maxHp: hp, dmg, speed,
+    atkCd: 0, atkInterval: isBoss?1.2:0.8,
+    boss: isBoss, worldBoss: false,
+    lockedBy: null,
+    color: isBoss ? '#aa00ff' : (isElite ? '#ff0088' : '#ff3333')
+  };
+  e.speed *= 2;
+  enemies.push(e);
+}
+
+function spawnBoss() {
+  let side = Math.floor(Math.random()*4);
+  let margin = 300;
+  let x, y;
+  if(side===0){ x = camera.x - margin; y = camera.y + Math.random()*canvas.height; }
+  else if(side===1){ x = camera.x + canvas.width + margin; y = camera.y + Math.random()*canvas.height; }
+  else if(side===2){ x = camera.x + Math.random()*canvas.width; y = camera.y - margin; }
+  else { x = camera.x + Math.random()*canvas.width; y = camera.y + canvas.height + margin; }
+  x = Math.max(100, Math.min(WORLD_W-100, x));
+  y = Math.max(100, Math.min(WORLD_H-100, y));
+  
+  let e = {
+    x, y, r: 45,
+    hp: 10000, maxHp: 10000,
+    dmg: 100, speed: 70,
+    atkCd: 0, atkInterval: 1.5,
+    boss: true, worldBoss: true,
+    noKnockback: true,
+    lockedBy: null,
+    color: '#ffcc00'
+  };
+  e.speed *= 2;
+  enemies.push(e);
+  
+  addDamageText(player.x, player.y - 60, '世界BOSS降临！', '#ffcc00');
+}
+
+function spawnAlly(factory) {
+  if(countRealAllies() >= getMaxAllies()) return;
+  
+  let hpMult = Math.pow(1.25, upgradeLevels['a_hp']);
+  let dmgMult = Math.pow(1.2, upgradeLevels['a_dmg']);
+  let spdMult = Math.pow(1.1, upgradeLevels['a_spd']);
+  let range = getMeleeRange();
+  
+  let a = {
+    x: factory.x, y: factory.y, r: 11,
+    hp: Math.floor(30 * hpMult), maxHp: Math.floor(30 * hpMult),
+    dmg: Math.floor(12 * dmgMult), speed: 130 * spdMult,
+    atkCd: 0, atkInterval: 0.7,
+    target: null, mode: mode,
+    vision: 380, atkRange: range,
+    isSkull: false,
+    color: mode==='attack' ? '#44ff44' : '#44ccff'
+  };
+  allies.push(a);
+}
+
+function spawnSkull(fromEnemy) {
+  let hp = Math.max(10, fromEnemy.maxHp * 0.1);
+  let dmg = Math.max(2, fromEnemy.dmg * 0.1);
+  let s = {
+    x: fromEnemy.x, y: fromEnemy.y, r: 10,
+    hp: hp, maxHp: hp,
+    dmg: dmg, speed: Math.min(120, fromEnemy.speed * 0.8),
+    atkCd: 0, atkInterval: 0.8,
+    target: null, mode: mode,
+    vision: 350, atkRange: getMeleeRange(),
+    isSkull: true,
+    color: '#cccccc'
+  };
+  allies.push(s);
+}
+
+let lastTime = performance.now();
+
+function loop(now) {
+  let dt = Math.min((now - lastTime)/1000, 0.05);
+  lastTime = now;
+  gameTime += dt;
+  
+  update(dt);
+  draw();
+  updateUI();
+  requestAnimationFrame(loop);
+}
+
+function update(dt) {
+  if(joystick.active) {
+    let len = Math.hypot(joystick.dx, joystick.dy);
+    if(len > 0.1) {
+      let nx = joystick.dx / len, ny = joystick.dy / len;
+      player.x += nx * player.speed * dt;
+      player.y += ny * player.speed * dt;
+      player.facing = Math.atan2(ny, nx);
+    }
+  }
+  player.x = Math.max(20, Math.min(WORLD_W-20, player.x));
+  player.y = Math.max(20, Math.min(WORLD_H-20, player.y));
+  
+  if(player.hp < player.maxHp) {
+    player.hp = Math.min(player.maxHp, player.hp + player.regen * dt);
+  }
+  if(player.hp <= 0) {
+    player.hp = player.maxHp * 0.3;
+    player.x = WORLD_W/2; player.y = WORLD_H/2;
+  }
+  
+  let zoom = modeConfig.zoom;
+  camera.x = player.x - canvas.width/(2*zoom);
+  camera.y = player.y - canvas.height/(2*zoom);
+  
+  bossTimer -= dt;
+  if(bossTimer <= 0) {
+    spawnBoss();
+    bossTimer = 60;
+  }
+  
+  let fSpdMult = Math.pow(0.88, upgradeLevels['f_spd']||0);
+  factories.forEach((f, i) => {
+    let angle = (factories.length>1 ? (i/factories.length)*Math.PI*2 : 0) + gameTime*0.25;
+    let dist = 75;
+    f.x = player.x + Math.cos(angle)*dist;
+    f.y = player.y + Math.sin(angle)*dist;
+    
+    if(factoryPaused) return;
+    f.timer += dt;
+    let realInt = Math.max(0.6, 3 * fSpdMult);
+    if(f.timer >= realInt) {
+      f.timer = 0;
+      if(countRealAllies() < getMaxAllies()) spawnAlly(f);
+    }
+  });
+  
+  let aAtkMult = Math.pow(0.88, upgradeLevels['a_atk']||0);
+  
+  allies.forEach(a => {
+    if(a.hp <= 0) return;
+    a.mode = mode;
+    if(!a.isSkull) a.color = mode==='attack' ? '#44ff44' : '#44ccff';
+    a.atkRange = getMeleeRange();
+    
+    if(!a.isSkull) {
+      let hpMult = Math.pow(1.25, upgradeLevels['a_hp']||0);
+      let dmgMult = Math.pow(1.2, upgradeLevels['a_dmg']||0);
+      let spdMult = Math.pow(1.1, upgradeLevels['a_spd']||0);
+      a.maxHp = Math.floor(30 * hpMult);
+      a.dmg = Math.floor(12 * dmgMult);
+      a.speed = 130 * spdMult;
+    }
+    
+    if(mode === 'attack') {
+      if(!a.target || a.target.hp <= 0 || dist(a, a.target) > a.vision*1.6) {
+        if(a.target && a.target.lockedBy === a) a.target.lockedBy = null;
+        a.target = findBestTarget(a);
+        if(a.target) a.target.lockedBy = a;
+      }
+      
+      if(a.target && a.target.hp > 0) {
+        let d = dist(a, a.target);
+        if(d > a.atkRange + a.target.r) {
+          moveTo(a, a.target, a.speed * dt);
+        } else {
+          a.atkCd -= dt;
+          if(a.atkCd <= 0) {
+            a.atkCd = 0.7 * aAtkMult;
+            dealDamage(a.target, a.dmg, a);
+            if(a.target.hp <= 0) onKill(a.target, a);
+          }
+        }
+      } else {
+        if(dist(a, player) > 160) moveTo(a, player, a.speed * 0.8 * dt);
+      }
+    } else {
+      if(a.target && a.target.lockedBy === a) a.target.lockedBy = null;
+      a.target = null;
+      
+      let liveAllies = allies.filter(al=>al.hp>0);
+      let idx = liveAllies.indexOf(a);
+      let total = liveAllies.length || 1;
+      let guardAngle = (idx/total)*Math.PI*2 + gameTime*0.35;
+      let guardR = 120;
+      let gx = player.x + Math.cos(guardAngle)*guardR;
+      let gy = player.y + Math.sin(guardAngle)*guardR;
+      
+      if(dist(a, {x:gx,y:gy}) > 18) moveTo(a, {x:gx,y:gy}, a.speed * dt);
+      
+      let nearest = null, nd = Infinity;
+      enemies.forEach(e=>{
+        if(e.hp <= 0) return;
+        let d = dist(a, e);
+        if(d < a.atkRange + e.r && d < nd) { nd = d; nearest = e; }
+      });
+      if(nearest) {
+        a.atkCd -= dt;
+        if(a.atkCd <= 0) {
+          a.atkCd = 0.7 * aAtkMult;
+          dealDamage(nearest, a.dmg, a);
+          if(nearest.hp <= 0) onKill(nearest, a);
+        }
+      }
+    }
+    
+    if(dist(a, player) > 700) moveTo(a, player, a.speed * 2.5 * dt);
+  });
+  
+  allies = allies.filter(a => {
+    if(a.hp <= 0) {
+      if(a.target && a.target.lockedBy === a) a.target.lockedBy = null;
+      for(let i=0; i<<8; i++) spawnParticle(a.x, a.y, a.color);
+      return false;
+    }
+    return true;
+  });
+  
+  let defRate = Math.min(0.9, (upgradeLevels['p_def']||0) * 0.03);
+  
+  enemies.forEach(e => {
+    if(e.hp <= 0) return;
+    
+    let nearest = player;
+    let minD = dist(e, player);
+    
+    allies.forEach(a => {
+      if(a.hp <= 0) return;
+      let d = dist(e, a);
+      if(d < minD) { minD = d; nearest = a; }
+    });
+    
+    if(minD > e.r + nearest.r + 4) {
+      moveTo(e, nearest, e.speed * dt);
+    } else {
+      e.atkCd -= dt;
+      if(e.atkCd <= 0) {
+        e.atkCd = e.atkInterval;
+        let actualDmg = Math.max(1, Math.floor(e.dmg * (1 - defRate)));
+        if(nearest === player) {
+          player.hp -= actualDmg;
+          addDamageText(player.x, player.y-22, actualDmg, '#ff3333');
+        } else {
+          nearest.hp -= actualDmg;
+          addDamageText(nearest.x, nearest.y-15, actualDmg, '#ff3333');
+        }
+      }
+    }
+  });
+  
+  enemies = enemies.filter(e => e.hp > 0);
+  
+  player.atkCd -= dt;
+  if(player.atkCd <= 0) {
+    let range = player.atkRange * (1 + (upgradeLevels['a_range']||0)*0.1);
+    let target = findNearest(player, enemies, range);
+    if(target) {
+      player.atkCd = player.atkInterval * player.atkIntervalMult;
+      let isCrit = Math.random() < (upgradeLevels['p_crit']||0) * 0.03;
+      shootProjectile(player, target, player.dmg * player.dmgMult, '#ffdd00', 320, isCrit);
+    }
+  }
+  
+  projectiles.forEach(p => {
+    p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+    if(p.fromPlayer || p.fromAlly) {
+      enemies.forEach(e => {
+        if(e.hp <= 0) return;
+        if(dist(p, e) < e.r + p.r) {
+          dealDamage(e, p.dmg, p.fromPlayer ? player : null, p.isCrit);
+          p.life = 0;
+          if(e.hp <= 0) onKill(e, null);
+        }
+      });
+    }
+  });
+  projectiles = projectiles.filter(p => p.life > 0);
+  
+  let pickMult = Math.pow(1.3, upgradeLevels['xp_rng']||0);
+  xpOrbs.forEach(o => {
+    let pickR = 55 * pickMult;
+    let d = dist(o, player);
+    if(d < pickR) {
+      let k = 1 - d/pickR;
+      o.x += (player.x - o.x) * (3.5 + k*6) * dt;
+      o.y += (player.y - o.y) * (3.5 + k*6) * dt;
+    }
+    if(d < 22) {
+      o.collected = true;
+      xp += o.val;
+      while(xp >= XP_NEED) {
+        xp -= XP_NEED;
+        playerLevel++;
+        skillPoints++;
+      }
+    }
+  });
+  xpOrbs = xpOrbs.filter(o => !o.collected);
+  
+  particles.forEach(p => { p.x += p.vx*dt; p.y += p.vy*dt; p.life -= dt; p.alpha = Math.max(0, p.life/p.maxLife); });
+  particles = particles.filter(p => p.life > 0);
+  
+  damageTexts.forEach(t => { t.y -= 22*dt; t.life -= dt; });
+  damageTexts = damageTexts.filter(t => t.life > 0);
+  
+  let spawnRate = Math.max(0.4, 1.6 / (1 + gameTime/80)) / modeConfig.spawnMult;
+  if(Math.random() < dt / spawnRate) {
+    let count = 1 + Math.floor(gameTime/25);
+    count = Math.min(count, 6);
+    for(let i=0; i<count; i++) spawnEnemy();
+  }
+}
+
+function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+
+function moveTo(ent, target, step){
+  let d = dist(ent, target);
+  if(d < 1) return;
+  let nx=(target.x-ent.x)/d, ny=(target.y-ent.y)/d;
+  ent.x += nx*step;
+  ent.y += ny*step;
+}
+
+function findNearest(self, list, maxDist){
+  let best=null, bd=maxDist;
+  list.forEach(e=>{
+    let d=dist(self,e);
+    if(d < bd){ bd=d; best=e; }
+  });
+  return best;
+}
+
+function findBestTarget(ally) {
+  let best=null, bestScore=Infinity;
+  enemies.forEach(e=>{
+    if(e.hp<=0) return;
+    let d=dist(ally,e);
+    if(d>ally.vision) return;
+    let score=d;
+    if(e.lockedBy && e.lockedBy!==ally && e.lockedBy.hp>0) score+=900;
+    if(e.boss) score-=200;
+    if(score < bestScore){ bestScore=score; best=e; }
+  });
+  return best;
+}
+
+function dealDamage(target, dmg, source, isCrit=false) {
+  let actualDmg = Math.floor(dmg * (isCrit ? 2 : 1));
+  target.hp -= actualDmg;
+  
+  let text = isCrit ? '暴击 ' + actualDmg : actualDmg;
+  let color = isCrit ? '#ffcc00' : '#fff';
+  addDamageText(target.x, target.y - (target.r > 20 ? 30 : 16), text, color);
+  
+  if(source === player) {
+    let ls = (upgradeLevels['p_lifesteal']||0) * 0.02;
+    if(ls > 0) player.hp = Math.min(player.maxHp, player.hp + actualDmg * ls);
+  } else if(source && !source.isSkull && source !== player) {
+    let ls = (upgradeLevels['a_lifesteal']||0) * 0.015;
+    if(ls > 0) source.hp = Math.min(source.maxHp, source.hp + actualDmg * ls);
+  }
+  
+  if(source && !target.noKnockback) {
+    let dx=target.x-source.x, dy=target.y-source.y, d=Math.hypot(dx,dy)||1;
+    target.x += (dx/d)*4;
+    target.y += (dy/d)*4;
+  }
+  
+  for(let i=0; i<<3; i++) spawnParticle(target.x, target.y, '#ffaaaa');
+}
+
+function onKill(enemy, killer) {
+  kills++;
+  let mult = 1 + (upgradeLevels['xp_gain']||0) * 0.15;
+  let val = (enemy.worldBoss ? 500 : (enemy.boss ? 100 : (enemy.elite ? 30 : 10))) * mult;
+  if(enemy.worldBoss) skillPoints += 10;
+  
+  xpOrbs.push({ x: enemy.x, y: enemy.y, r: 5, val: Math.floor(val), collected: false });
+  
+  if(charConfig.type === 'necromancer' && !enemy.isSkull && !enemy.worldBoss) {
+    spawnSkull(enemy);
+  }
+  
+  for(let i=0; i<(enemy.worldBoss ? 30 : enemy.boss ? 20 : 10); i++) spawnParticle(enemy.x, enemy.y, enemy.color);
+}
+
+function shootProjectile(from, to, dmg, color, speed, isCrit=false) {
+  let dx=to.x-from.x, dy=to.y-from.y, d=Math.hypot(dx,dy)||1;
+  let spd = speed * (1 + (upgradeLevels['p_proj']||0) * 0.1);
+  projectiles.push({
+    x:from.x+(dx/d)*22, y:from.y+(dy/d)*22,
+    vx:(dx/d)*spd, vy:(dy/d)*spd,
+    r:4 + (upgradeLevels['p_proj']||0)*0.5, life:2.2, dmg:dmg, color,
+    fromPlayer: from===player, fromAlly: from!==player,
+    isCrit: isCrit
+  });
+}
+
+function spawnParticle(x,y,color) {
+  let a=Math.random()*Math.PI*2, sp=25+Math.random()*70;
+  particles.push({ x,y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life:0.3+Math.random()*0.4, maxLife:0.7, r:2+Math.random()*3, color });
+}
+
+function addDamageText(x,y,text,color) {
+  damageTexts.push({x,y,text,color,life:0.7});
+}
+
+function draw() {
+  ctx.fillStyle = '#08080c';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  
+  let zoom = modeConfig.zoom;
+  
+  ctx.save();
+  ctx.translate(canvas.width/2, canvas.height/2);
+  ctx.scale(zoom, zoom);
+  ctx.translate(-player.x, -player.y);
+  
+  ctx.strokeStyle = '#15151c';
+  ctx.lineWidth = 1 / zoom;
+  let gs=120;
+  let camLeft = player.x - canvas.width/(2*zoom);
+  let camTop = player.y - canvas.height/(2*zoom);
+  let viewRight = camLeft + canvas.width/zoom;
+  let viewBottom = camTop + canvas.height/zoom;
+  let sx=Math.floor(camLeft/gs)*gs, sy=Math.floor(camTop/gs)*gs;
+  
+  for(let x=sx; x<=viewRight+gs; x+=gs) {
+    ctx.beginPath(); ctx.moveTo(x, camTop-gs); ctx.lineTo(x, viewBottom+gs); ctx.stroke();
+  }
+  for(let y=sy; y<=viewBottom+gs; y+=gs) {
+    ctx.beginPath(); ctx.moveTo(camLeft-gs, y); ctx.lineTo(viewRight+gs, y); ctx.stroke();
+  }
+  
+  ctx.strokeStyle = '#333'; ctx.lineWidth=3/zoom;
+  ctx.strokeRect(0,0,WORLD_W,WORLD_H);
+  
+  xpOrbs.forEach(o=>{
+    ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,Math.PI*2);
+    ctx.fillStyle='#44ffaa'; ctx.fill();
+    ctx.shadowColor='#44ffaa'; ctx.shadowBlur=10; ctx.fill(); ctx.shadowBlur=0;
+  });
+  
+  factories.forEach(f=>{
+    ctx.fillStyle='#3a3a44';
+    ctx.fillRect(f.x-f.radius, f.y-f.radius, f.radius*2, f.radius*2);
+    ctx.strokeStyle='#ffaa00'; ctx.lineWidth=2;
+    ctx.strokeRect(f.x-f.radius, f.y-f.radius, f.radius*2, f.radius*2);
+    let fSpdMult = Math.pow(0.88, upgradeLevels['f_spd']||0);
+    let realInt = Math.max(0.6, 3*fSpdMult);
+    let pct = Math.min(1, f.timer/realInt);
+    ctx.fillStyle='#ffaa00';
+    ctx.fillRect(f.x-f.radius, f.y+f.radius+5, (f.radius*2)*pct, 5);
+    ctx.fillStyle='#ffcc00'; ctx.font=`${16/zoom}px Arial`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('⚙️', f.x, f.y);
+  });
+  
+  allies.forEach(a=>{
+    if(a.hp<=0) return;
+    ctx.beginPath();
+    if(a.isSkull) {
+      ctx.arc(a.x, a.y, a.r, 0, Math.PI*2);
+      ctx.fillStyle='#cccccc'; ctx.fill();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=1; ctx.stroke();
+    } else if(a.mode==='attack') {
+      let ang = a.target ? Math.atan2(a.target.y-a.y, a.target.x-a.x) : 0;
+      ctx.moveTo(a.x+Math.cos(ang)*a.r, a.y+Math.sin(ang)*a.r);
+      ctx.lineTo(a.x+Math.cos(ang+2.4)*a.r, a.y+Math.sin(ang+2.4)*a.r);
+      ctx.lineTo(a.x+Math.cos(ang-2.4)*a.r, a.y+Math.sin(ang-2.4)*a.r);
+      ctx.fillStyle=a.color; ctx.fill();
+      ctx.strokeStyle='#e0ffe0'; ctx.lineWidth=1.5; ctx.stroke();
+    } else {
+      ctx.arc(a.x,a.y,a.r,0,Math.PI*2);
+      ctx.fillStyle=a.color; ctx.fill();
+      ctx.strokeStyle='#e0ffe0'; ctx.lineWidth=1.5; ctx.stroke();
+    }
+    
+    if(a.hp < a.maxHp){
+      ctx.fillStyle='#222'; ctx.fillRect(a.x-11, a.y-a.r-9, 22, 4);
+      ctx.fillStyle='#44ff44'; ctx.fillRect(a.x-11, a.y-a.r-9, 22*(a.hp/a.maxHp), 4);
+    }
+  });
+  
+  enemies.forEach(e=>{
+    if(e.hp<=0) return;
+    if(e.worldBoss) {
+      ctx.shadowColor='#ffaa00'; ctx.shadowBlur=25;
+      ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2);
+      ctx.fillStyle=e.color; ctx.fill();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=4; ctx.stroke();
+      ctx.shadowBlur=0;
+      ctx.fillStyle='#fff'; ctx.font=`bold ${14/zoom}px Arial`; ctx.textAlign='center';
+      ctx.fillText('世界BOSS', e.x, e.y-e.r-18);
+    } else {
+      ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2);
+      ctx.fillStyle=e.color; ctx.fill();
+      ctx.strokeStyle=e.boss?'#ffcc00':(e.elite?'#ff66aa':'#aa2222'); ctx.lineWidth=e.boss?3:1.5; ctx.stroke();
+    }
+    
+    ctx.fillStyle='#222'; ctx.fillRect(e.x-15, e.y-e.r-9, 30, 4);
+    ctx.fillStyle='#ff3333'; ctx.fillRect(e.x-15, e.y-e.r-9, 30*(e.hp/e.maxHp), 4);
+  });
+  
+  ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2);
+  ctx.fillStyle=player.color; ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(player.x,player.y);
+  ctx.lineTo(player.x+Math.cos(player.facing)*24, player.y+Math.sin(player.facing)*24);
+  ctx.strokeStyle='#88ddff'; ctx.lineWidth=2; ctx.stroke();
+  
+  projectiles.forEach(p=>{
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fillStyle=p.color; ctx.fill();
+  });
+  
+  particles.forEach(p=>{
+    ctx.globalAlpha=p.alpha;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fillStyle=p.color; ctx.fill();
+  });
+  ctx.globalAlpha=1;
+  
+  ctx.font=`bold ${13/zoom}px Arial`; ctx.textAlign='center';
+  damageTexts.forEach(t=>{
+    ctx.fillStyle=t.color;
+    ctx.fillText(t.text, t.x, t.y);
+  });
+  
+  ctx.restore();
+  
+  if(joystick.active){
+    ctx.globalAlpha=0.35;
+    ctx.beginPath(); ctx.arc(joystick.originX, joystick.originY, 55, 0, Math.PI*2);
+    ctx.fillStyle='#fff'; ctx.fill();
+    ctx.beginPath(); ctx.arc(joystick.currX, joystick.currY, 22, 0, Math.PI*2);
+    ctx.fillStyle='#4488ff'; ctx.fill();
+    ctx.globalAlpha=1;
+  }
+}
+
+function updateUI() {
+  document.getElementById('hud-lvl').textContent = playerLevel;
+  document.getElementById('hud-points').textContent = skillPoints;
+  document.getElementById('hud-allies').textContent = countRealAllies();
+  document.getElementById('hud-cap').textContent = getMaxAllies();
+  document.getElementById('hud-skulls').textContent = '(' + allies.filter(a=>a.isSkull).length + ')';
+  document.getElementById('hud-kills').textContent = kills;
+  document.getElementById('hud-fact').textContent = factories.length;
+  document.getElementById('hud-range').textContent = Math.floor(getMeleeRange());
+  document.getElementById('hud-boss').textContent = Math.ceil(bossTimer);
+  document.getElementById('hp-fill').style.width = (player.hp/player.maxHp*100)+'%';
+  document.getElementById('xp-fill').style.width = (xp/XP_NEED*100)+'%';
+  
+  let btn = document.getElementById('upgrade-btn');
+  btn.style.display = skillPoints > 0 ? 'block' : 'none';
+  document.getElementById('btn-points').textContent = skillPoints;
+}
+
+const panel = document.getElementById('upgrade-panel');
+const grid = document.getElementById('upgrade-grid');
+
+function renderUpgradeGrid() {
+  grid.innerHTML = '';
+  upgradeDefs.forEach(u => {
+    let lvl = upgradeLevels[u.id];
+    let cost = modeConfig.costFixed ? 1 : (lvl + 1);
+    let canAfford = skillPoints >= cost;
+    let card = document.createElement('div');
+    card.className = 'up-card' + (!canAfford ? ' disabled' : '');
+    card.dataset.id = u.id;
+    card.innerHTML = `
+      <div class="up-cost">${cost}点</div>
+      <div class="up-icon">${u.icon}</div>
+      <div class="up-name">${u.name}</div>
+      <div class="up-lvl">Lv.${lvl}</div>
+      <div class="up-desc">${u.descFn(lvl)}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function tryUpgrade(id) {
+  let u = upgradeDefs.find(x => x.id === id);
+  if(!u) return;
+  let lvl = upgradeLevels[id];
+  let cost = modeConfig.costFixed ? 1 : (lvl + 1);
+  if(skillPoints >= cost) {
+    skillPoints -= cost;
+    upgradeLevels[id]++;
+    u.apply();
+    renderUpgradeGrid();
+    updateUI();
+  } else {
+    if(repeatTimer) { clearInterval(repeatTimer); repeatTimer = null; }
+  }
+}
+
+// ========== 长按逻辑：按住2秒后开始连续，松手停止；短按只加1次 ==========
+let pressTimer = null;
+let repeatTimer = null;
+let activeUpgradeId = null;
+
+function onGridDown(e) {
+  e.preventDefault();
+  let card = e.target.closest('.up-card');
+  if(!card || card.classList.contains('disabled')) return;
+  
+  activeUpgradeId = card.dataset.id;
+  card.classList.add('holding');
+  
+  // 2秒延迟后进入连续模式
+  pressTimer = setTimeout(() => {
+    pressTimer = null;
+    tryUpgrade(activeUpgradeId); // 长按时第1次
+    repeatTimer = setInterval(() => {
+      if(activeUpgradeId) tryUpgrade(activeUpgradeId);
+    }, 120);
+  }, 2000);
+}
+
+function onGridUp(e) {
+  let card = e.target.closest('.up-card');
+  if(card) card.classList.remove('holding');
+  
+  if(pressTimer) {
+    // 2秒内松开 = 短按，执行1次
+    clearTimeout(pressTimer);
+    pressTimer = null;
+    if(activeUpgradeId) tryUpgrade(activeUpgradeId);
+  }
+  if(repeatTimer) {
+    clearInterval(repeatTimer);
+    repeatTimer = null;
+  }
+  activeUpgradeId = null;
+}
+
+grid.addEventListener('mousedown', onGridDown);
+grid.addEventListener('touchstart', onGridDown, {passive:false});
+grid.addEventListener('mouseup', onGridUp);
+grid.addEventListener('mouseleave', onGridUp);
+grid.addEventListener('touchend', onGridUp);
+grid.addEventListener('touchcancel', onGridUp);
+
+document.getElementById('upgrade-btn').onclick = () => {
+  renderUpgradeGrid();
+  panel.style.display = 'block';
+};
+document.getElementById('close-panel').onclick = () => {
+  panel.style.display = 'none';
+  if(repeatTimer){ clearInterval(repeatTimer); repeatTimer = null; }
+  if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; }
+  activeUpgradeId = null;
+};
+
+function getPos(e) {
+  if(e.touches && e.touches.length>0) return {x:e.touches[0].clientX, y:e.touches[0].clientY};
+  return {x:e.clientX, y:e.clientY};
+}
+
+canvas.addEventListener('touchstart', e=>{
+  e.preventDefault();
+  for(let i=0;i<e.changedTouches.length;i++){
+    let t=e.changedTouches[i];
+    if(t.clientX < window.innerWidth*0.5 && !joystick.active){
+      joystick.active=true; joystick.id=t.identifier;
+      joystick.originX=t.clientX; joystick.originY=t.clientY;
+      joystick.currX=t.clientX; joystick.currY=t.clientY;
+    }
+  }
+},{passive:false});
+
+canvas.addEventListener('touchmove', e=>{
+  e.preventDefault();
+  for(let i=0;i<e.changedTouches.length;i++){
+    let t=e.changedTouches[i];
+    if(joystick.active && t.identifier===joystick.id){
+      joystick.currX=t.clientX; joystick.currY=t.clientY;
+      let dx=t.clientX-joystick.originX, dy=t.clientY-joystick.originY;
+      let len=Math.hypot(dx,dy), maxLen=65;
+      if(len>maxLen){dx=dx/len*maxLen; dy=dy/len*maxLen;}
+      joystick.dx=dx/maxLen; joystick.dy=dy/maxLen;
+    }
+  }
+},{passive:false});
+
+canvas.addEventListener('touchend', e=>{
+  e.preventDefault();
+  for(let i=0;i<e.changedTouches.length;i++){
+    let t=e.changedTouches[i];
+    if(joystick.active && t.identifier===joystick.id){
+      joystick.active=false; joystick.dx=0; joystick.dy=0;
+    }
+  }
+},{passive:false});
+
+let mouseDown=false;
+canvas.addEventListener('mousedown', e=>{
+  if(e.clientX < window.innerWidth*0.5){
+    mouseDown=true; joystick.active=true;
+    joystick.originX=e.clientX; joystick.originY=e.clientY;
+    joystick.currX=e.clientX; joystick.currY=e.clientY;
+  }
+});
+canvas.addEventListener('mousemove', e=>{
+  if(mouseDown && joystick.active){
+    joystick.currX=e.clientX; joystick.currY=e.clientY;
+    let dx=e.clientX-joystick.originX, dy=e.clientY-joystick.originY;
+    let len=Math.hypot(dx,dy), maxLen=65;
+    if(len>maxLen){dx=dx/len*maxLen; dy=dy/len*maxLen;}
+    joystick.dx=dx/maxLen; joystick.dy=dy/maxLen;
+  }
+});
+canvas.addEventListener('mouseup', ()=>{ mouseDown=false; joystick.active=false; joystick.dx=0; joystick.dy=0; });
+
+document.getElementById('btn-attack').onclick = ()=>{
+  mode='attack';
+  document.getElementById('btn-attack').classList.add('active-attack');
+  document.getElementById('btn-defend').classList.remove('active-defend');
+};
+document.getElementById('btn-defend').onclick = ()=>{
+  mode='defend';
+  document.getElementById('btn-defend').classList.add('active-defend');
+  document.getElementById('btn-attack').classList.remove('active-attack');
+};
+
+document.getElementById('btn-factory').onclick = ()=>{
+  factoryPaused = !factoryPaused;
+  let btn = document.getElementById('btn-factory');
+  if(factoryPaused) {
+    btn.textContent = '恢复生产';
+    btn.style.borderColor = '#ff4444';
+    btn.style.color = '#ff4444';
+  } else {
+    btn.textContent = '暂停生产';
+    btn.style.borderColor = '#44ff44';
+    btn.style.color = '#44ff44';
+  }
+};
+</script>
+</body>
+</html>
