@@ -36,13 +36,19 @@
    }
    code {
       font-family: Consolas, 'Courier New', monospace;
+      text-shadow: 0 0 25px whitesmoke;
       color: white;
+      font-size: 2rem
    }
-   .keyword { color: #d17277; }
-   .string { color: #a1c281; }
-   .comment { color: #80848d; }
-   .function { color: #80a9e0; }
-   .brackets1 { color: #c99c6e;}
+   .keyword   { color: #d17277; }
+   .string    { color: #a1c281; }
+   .comment   { color: #80848d; }
+   .function  { color: #80a9e0; }
+   .brackets2 { color: #c88fcc; }
+   .brackets1 { color: #c99c6e; }
+   .data      { color: #d8c38c; }
+   .symbol    { color: #ffffff; }
+   .operator  { color: #7fb2bc; }
 </style>
 <title>法克西的Python</title>
 <h1 onclick="alert('不要乱戳法克西')">法 克 西 共 和 国</h1>
@@ -71,6 +77,12 @@
 <h2>如果你得到了上面视频中的效果，那么说明你成功了！！！</h2>
 <h2>Python还有很多，我们接下来再来做一个东西，我们要得到的效果是：1 2 3 4 5 6 7 8 9 10</h2>
 <video src="Python4.mp4" controls width="640" height="360"></video>
+<code><pre>
+<span class="brackets2">for </span><span class="keyword">i </span><span class="brackets2">in </span><span class="data">range</span><span class="brackets1">(10)</span><span class="symbol">:</span>
+</code></pre>
+<code><pre>
+<span class="function">                           print</span><span class="brackets1">(</span><span class="data">str</span><span class="brackets2">(</span><span class="keyword">i</span><span class="operator">+</span><span class="brackets1">1</span><span class="brackets2">)<span class="operator">+</span><span class="string">" "</span><span class="symbol">,</span><span class="keyword">end</span><span class="operator">=</span><span class="string">""</span><span class="symbol">,</span><span class="keyword">flush</span><span class="operator">=</span><span class="data">False</span><span class="brackets1">)</span>
+</code></pre>
 <h2>其中flush是是否换行，默认是True；end指末尾的字符，如视频里的<code><pre><span class="string">" "</span></code></pre>嘻嘻。</h2>
 <h2>这只是一个基础教程，大家可以看下面这个图片来了解</h2>
 <img src="Python1.png">
