@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>法克西的计算器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            display: flex;
+            height: 100vh;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 50%, #0f0f2e 100%);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            overflow: hidden;
+            color: #e0e0ff;
+        }
+
+        /* ===== 左侧导航栏 ===== */
+        .sidebar {
+            width: 80px;
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 0;
+            gap: 20px;
+            border-right: 1px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        .sidebar-btn {
+            width: 56px;
+            height: 56px;
+            border: none;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.06);
+            color: rgba(255,255,255,0.45);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        .sidebar-btn:hover {
+            background: rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.8);
+            transform: translateY(-2px);
+        }
+        .sidebar-btn.active {
+            background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+            color: white;
+            box-shadow: 0 8px 30px rgba(0,212,255,0.35);
+        }
+        .sidebar-btn svg { width: 22px; height: 22px; fill: currentColor; }
+
+        /* ===== 主内容区 ===== */
+        .main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow: auto;
+            position: relative;
+        }
+        .panel {
+            display: none;
+            animation: fadeIn 0.4s ease;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+        .panel.active { display: flex; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== 普通 & 进阶 计算器 ===== */
+        .calc-container {
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(24px);
+            border-radius: 28px;
+            padding: 28px;
+            box-shadow: 0 30px 70px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .display {
+            background: rgba(0,0,0,0.35);
+            border-radius: 18px;
+            padding: 22px;
+            margin-bottom: 18px;
+            text-align: right;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .expr { color: rgba(255,255,255,0.45); font-size: 1.05rem; min-height: 24px; word-break: break-all; font-family: 'Courier New', monospace; }
+        .res { color: #00e5ff; font-size: 2.4rem; font-weight: 300; word-break: break-all; min-height: 44px; letter-spacing: -0.5px; }
+        .buttons { display: grid; gap: 10px; }
+        button {
+            border: none;
+            border-radius: 14px;
+            height: 56px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-weight: 500;
+            outline: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+        button:active { transform: translateY(0); }
+        .span-2 { grid-column: span 2; }
+        .num { background: rgba(255,255,255,0.92); color: #0a0a1a; }
+        .num:hover { background: white; }
+        .op { background: rgba(0,229,255,0.85); color: #0a0a1a; }
+        .op:hover { background: #00e5ff; }
+        .func { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.9); font-size: 0.95rem; }
+        .func:hover { background: rgba(255,255,255,0.2); }
+        .eq { background: linear-gradient(135deg, #00ff88, #00d4ff); color: #0a0a1a; font-size: 1.3rem; font-weight: 700; }
+        .eq:hover { filter: brightness(1.15); }
+        .ac { background: rgba(255,59,48,0.85); color: white; }
+        .ac:hover { background: #ff3b30; }
+        .del { background: rgba(255,149,0,0.85); color: white; }
+        .del:hover { background: #ff9500; }
+        .sto { background: rgba(175,82,222,0.85); color: white; }
+        .sto:hover { background: #af52de; }
+        .sto.active { background: #ff9500; box-shadow: 0 0 20px rgba(255,149,0,0.4); }
+        .const { background: rgba(255,204,0,0.9); color: #0a0a1a; }
+        .const:hover { background: #ffcc00; }
+
+        .normal-grid { grid-template-columns: repeat(4, 78px); gap: 12px; }
+        .normal-calc { max-width: 370px; }
+        .advanced-calc { max-width: 430px; }
+        .advanced-grid { grid-template-columns: repeat(5, 1fr); }
+        .var-panel {
+            display: grid;
+            grid-template-columns: repeat(11, 1fr);
+            gap: 6px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: rgba(0,0,0,0.25);
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: all 0.3s;
+        }
+        .var-panel.sto-active {
+            background: rgba(255,149,0,0.12);
+            border-color: rgba(255,149,0,0.35);
+            box-shadow: 0 0 25px rgba(255,149,0,0.15);
+        }
+        .var-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 5px 2px;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+        .var-item:hover { background: rgba(255,255,255,0.1); }
+        .var-panel.sto-active .var-item:hover { background: rgba(255,149,0,0.3); transform: scale(1.08); }
+        .var-name { color: #00e5ff; font-size: 0.75rem; font-weight: 700; margin-bottom: 2px; }
+        .var-value { color: rgba(255,255,255,0.55); font-size: 0.62rem; font-family: 'Courier New', monospace; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+        /* ===== 绘图模式 ===== */
+        .graph-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+            max-width: 1100px;
+            height: 92vh;
+        }
+        .graph-controls {
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(24px);
+            border-radius: 22px;
+            padding: 20px 24px;
+            border: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+        .graph-mode-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .mode-tab {
+            padding: 8px 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .mode-tab:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); }
+        .mode-tab.active {
+            background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(0,212,255,0.25);
+        }
+        .graph-input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .graph-input {
+            flex: 1;
+            min-width: 220px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 12px 18px;
+            color: #e0e0ff;
+            font-size: 1rem;
+            font-family: 'Courier New', monospace;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .graph-input::placeholder { color: rgba(255,255,255,0.25); }
+        .graph-input:focus { border-color: #00d4ff; box-shadow: 0 0 0 3px rgba(0,212,255,0.15); }
+        .graph-btn {
+            height: 46px;
+            padding: 0 22px;
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .graph-btn:hover { transform: translateY(-2px); }
+        .btn-draw { background: linear-gradient(135deg, #00d4ff, #7b2cbf); color: white; }
+        .btn-clear { background: rgba(255,59,48,0.85); color: white; }
+        .btn-zoom { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); }
+        .btn-tool { background: rgba(0,255,136,0.15); color: #00ff88; border: 1px solid rgba(0,255,136,0.3); }
+        .btn-tool.active { background: rgba(0,255,136,0.35); box-shadow: 0 0 15px rgba(0,255,136,0.2); }
+        .graph-hint {
+            color: rgba(255,255,255,0.35);
+            font-size: 0.8rem;
+        }
+        .func-list { display: flex; gap: 8px; flex-wrap: wrap; }
+        .func-tag {
+            background: rgba(0,212,255,0.12);
+            color: #00d4ff;
+            padding: 5px 12px;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(0,212,255,0.2);
+        }
+        .func-tag .remove { cursor: pointer; opacity: 0.5; transition: all 0.2s; font-size: 1rem; }
+        .func-tag .remove:hover { opacity: 1; color: #ff3b30; }
+
+        /* 变量滑动条 */
+        .var-sliders {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            max-height: 120px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .var-slider-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0,0,0,0.2);
+            padding: 8px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            min-width: 180px;
+            flex: 1;
+        }
+        .var-slider-label {
+            color: #00e5ff;
+            font-weight: 700;
+            font-size: 0.95rem;
+            width: 20px;
+            text-align: center;
+        }
+        .var-slider-input {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+        .var-slider-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #00e5ff;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,229,255,0.4);
+        }
+        .var-slider-val {
+            color: rgba(255,255,255,0.8);
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            min-width: 50px;
+            text-align: right;
+        }
+
+        /* 多边形统计 */
+        .poly-stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .poly-stat {
+            background: rgba(0,0,0,0.25);
+            padding: 10px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .poly-stat-label { color: rgba(255,255,255,0.4); font-size: 0.8rem; }
+        .poly-stat-value { color: #00ff88; font-size: 1.2rem; font-weight: 700; font-family: 'Courier New', monospace; }
+        .poly-points-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+        .poly-point-tag {
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.7);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .poly-point-tag:hover { background: rgba(255,255,255,0.15); }
+        .poly-point-tag.selected { border-color: #00e5ff; background: rgba(0,229,255,0.1); color: #00e5ff; }
+        .poly-point-tag .del-point { cursor: pointer; opacity: 0.4; transition: 0.2s; }
+        .poly-point-tag .del-point:hover { opacity: 1; color: #ff3b30; }
+
+        .graph-canvas-wrap {
+            flex: 1;
+            background: rgba(0,0,0,0.25);
+            border-radius: 22px;
+            border: 1px solid rgba(255,255,255,0.08);
+            position: relative;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+        #graphCanvas { width: 100%; height: 100%; display: block; }
+        .graph-info {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.55);
+            padding: 10px 14px;
+            border-radius: 10px;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.78rem;
+            font-family: 'Courier New', monospace;
+            pointer-events: none;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        @media (max-width: 900px) {
+            .sidebar { width: 64px; }
+            .sidebar-btn { width: 48px; height: 48px; font-size: 0.55rem; }
+            .graph-container { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 左侧导航 -->
+<nav class="sidebar">
+    <button class="sidebar-btn active" onclick="switchMode('normal')" id="btn-normal">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 7h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zM7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zM7 15h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z" fill="currentColor"/></svg>
+        普通
+    </button>
+    <button class="sidebar-btn" onclick="switchMode('advanced')" id="btn-advanced">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        进阶
+    </button>
+    <button class="sidebar-btn" onclick="switchMode('graph')" id="btn-graph">
+        <svg viewBox="0 0 24 24"><path d="M3 3v18h18" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 16l4-6 4 3 5-8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        绘图
+    </button>
+</nav>
+
+<main class="main">
+
+    <!-- 普通模式 -->
+    <div class="panel active" id="panel-normal">
+        <div class="calc-container normal-calc">
+            <div class="display">
+                <div class="expr" id="n-expr">0</div>
+                <div class="res" id="n-res"></div>
+            </div>
+            <div class="buttons normal-grid">
+                <button class="ac span-2" onclick="nClear()">AC</button>
+                <button class="del" onclick="nDel()">DEL</button>
+                <button class="op" onclick="nOp('÷')">÷</button>
+                <button class="num" onclick="nNum('7')">7</button>
+                <button class="num" onclick="nNum('8')">8</button>
+                <button class="num" onclick="nNum('9')">9</button>
+                <button class="op" onclick="nOp('×')">×</button>
+                <button class="num" onclick="nNum('4')">4</button>
+                <button class="num" onclick="nNum('5')">5</button>
+                <button class="num" onclick="nNum('6')">6</button>
+                <button class="op" onclick="nOp('-')">−</button>
+                <button class="num" onclick="nNum('1')">1</button>
+                <button class="num" onclick="nNum('2')">2</button>
+                <button class="num" onclick="nNum('3')">3</button>
+                <button class="op" onclick="nOp('+')">+</button>
+                <button class="num span-2" onclick="nNum('0')">0</button>
+                <button class="num" onclick="nNum('.')">.</button>
+                <button class="eq" onclick="nCalc()">=</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 进阶模式 -->
+    <div class="panel" id="panel-advanced">
+        <div class="calc-container advanced-calc">
+            <div class="display">
+                <div class="expr" id="a-expr">0</div>
+                <div class="res" id="a-res"></div>
+            </div>
+            <div class="var-panel" id="var-panel"></div>
+            <div class="buttons advanced-grid">
+                <button class="func" onclick="aFunc('sin(')">sin</button>
+                <button class="func" onclick="aFunc('cos(')">cos</button>
+                <button class="func" onclick="aFunc('tan(')">tan</button>
+                <button class="func" onclick="aFunc('log(')">log</button>
+                <button class="func" onclick="aFunc('ln(')">ln</button>
+                <button class="func" onclick="aSquare()">x²</button>
+                <button class="func" onclick="aSqrt()">√</button>
+                <button class="func" onclick="aOp('^')">^</button>
+                <button class="func" onclick="aRecip()">1/x</button>
+                <button class="func" onclick="aFunc('fact(')">n!</button>
+                <button class="func" onclick="aOp('(')">(</button>
+                <button class="func" onclick="aOp(')')">)</button>
+                <button class="const" onclick="aConst('π')">π</button>
+                <button class="const" onclick="aConst('e')">e</button>
+                <button class="func" onclick="aAns()">Ans</button>
+                <button class="num" onclick="aNum('7')">7</button>
+                <button class="num" onclick="aNum('8')">8</button>
+                <button class="num" onclick="aNum('9')">9</button>
+                <button class="del" onclick="aDel()">DEL</button>
+                <button class="ac" onclick="aClear()">AC</button>
+                <button class="num" onclick="aNum('4')">4</button>
+                <button class="num" onclick="aNum('5')">5</button>
+                <button class="num" onclick="aNum('6')">6</button>
+                <button class="op" onclick="aOp('×')">×</button>
+                <button class="op" onclick="aOp('÷')">÷</button>
+                <button class="num" onclick="aNum('1')">1</button>
+                <button class="num" onclick="aNum('2')">2</button>
+                <button class="num" onclick="aNum('3')">3</button>
+                <button class="op" onclick="aOp('-')">−</button>
+                <button class="op" onclick="aOp('+')">+</button>
+                <button class="num span-2" onclick="aNum('0')">0</button>
+                <button class="num" onclick="aNum('.')">.</button>
+                <button class="eq" onclick="aCalc()">=</button>
+                <button class="sto" id="sto-btn" onclick="toggleSto()">STO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 绘图模式 -->
+    <div class="panel" id="panel-graph">
+        <div class="graph-container">
+            <div class="graph-controls">
+                <div class="graph-mode-tabs">
+                    <div class="mode-tab active" onclick="switchGraphMode('function')" id="tab-function">函数绘图</div>
+                    <div class="mode-tab" onclick="switchGraphMode('polygon')" id="tab-polygon">多边形</div>
+                </div>
+
+                <!-- 函数模式控制区 -->
+                <div id="function-controls">
+                    <div class="graph-input-row">
+                        <input type="text" class="graph-input" id="graph-input" placeholder="输入函数，如: a*x^2+b*x+c, sin(k*x)" onkeydown="if(event.key==='Enter')addFunction()">
+                        <button class="graph-btn btn-draw" onclick="addFunction()">添加函数</button>
+                        <button class="graph-btn btn-clear" onclick="clearGraph()">清空</button>
+                    </div>
+                    <div class="func-list" id="func-list"></div>
+                    <div class="var-sliders" id="var-sliders"></div>
+                    <div class="graph-input-row">
+                        <button class="graph-btn btn-zoom" onclick="zoom(1.4)">放大 +</button>
+                        <button class="graph-btn btn-zoom" onclick="zoom(0.7)">缩小 −</button>
+                        <button class="graph-btn btn-zoom" onclick="resetView()">重置视图</button>
+                        <span class="graph-hint">支持变量: a-z (除x) · 自动创建滑动条 · 滚轮缩放 · 拖拽平移</span>
+                    </div>
+                </div>
+
+                <!-- 多边形模式控制区 -->
+                <div id="polygon-controls" style="display:none;">
+                    <div class="poly-stats">
+                        <div class="poly-stat">
+                            <span class="poly-stat-label">面积</span>
+                            <span class="poly-stat-value" id="poly-area">-</span>
+                        </div>
+                        <div class="poly-stat">
+                            <span class="poly-stat-label">周长</span>
+                            <span class="poly-stat-value" id="poly-perim">-</span>
+                        </div>
+                        <div class="poly-stat">
+                            <span class="poly-stat-label">顶点</span>
+                            <span class="poly-stat-value" id="poly-count">0</span>
+                        </div>
+                    </div>
+                    <div class="poly-points-list" id="poly-points-list"></div>
+                    <div class="graph-input-row">
+                        <button class="graph-btn btn-clear" onclick="clearPolygon()">清空顶点</button>
+                        <button class="graph-btn btn-zoom" onclick="polyUndo()">撤销</button>
+                        <button class="graph-btn btn-tool" id="btn-pan" onclick="togglePolyPan()">平移视图</button>
+                        <span class="graph-hint">点击画布添加顶点 · 拖拽移动 · 选中后按Delete删除 · 滚轮缩放</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="graph-canvas-wrap" id="canvas-wrap">
+                <canvas id="graphCanvas"></canvas>
+                <div class="graph-info" id="graph-info">就绪</div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script>
+/* ==================== 模式切换 ==================== */
+function switchMode(mode) {
+    document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('btn-' + mode).classList.add('active');
+    document.getElementById('panel-' + mode).classList.add('active');
+    if (mode === 'graph') setTimeout(resizeCanvas, 50);
+}
+
+/* ==================== 普通模式 ==================== */
+let nExpr = '', nLast = 0, nJust = false;
+function nUpdate() {
+    document.getElementById('n-expr').textContent = nExpr || '0';
+    document.getElementById('n-res').textContent = nLast !== 0 && nJust ? '= ' + fmt(nLast) : '';
+}
+function nNum(n) { if (nJust) { nExpr = ''; nJust = false; } if (n==='.' && nExpr.split(/[+\-×÷]/).pop().includes('.')) return; nExpr += n; nUpdate(); }
+function nOp(op) { nJust = false; nExpr += op; nUpdate(); }
+function nClear() { nExpr = ''; nLast = 0; nJust = false; nUpdate(); }
+function nDel() { if (nExpr==='Error') nExpr=''; else nExpr=nExpr.slice(0,-1); nUpdate(); }
+function nCalc() {
+    if (!nExpr) return;
+    try { let c=nExpr.replace(/×/g,'*').replace(/÷/g,'/'); let r=Function('"use strict"; return ('+c+')')(); if (!isFinite(r)) throw 0; nLast=r; nJust=true; nExpr=String(fmt(r)); nUpdate(); }
+    catch { nExpr='Error'; nUpdate(); setTimeout(()=>{nExpr=''; nUpdate();}, 1000); }
+}
+
+/* ==================== 进阶模式 ==================== */
+const vars = { a:0,b:0,c:0,m:0,n:0,o:0,p:0,x:0,y:0,z:0 };
+const varNames = Object.keys(vars);
+let aExpr='', aLast=0, aJust=false, stoMode=false;
+function initVars() {
+    const p = document.getElementById('var-panel');
+    varNames.forEach(v => {
+        const el = document.createElement('div'); el.className='var-item'; el.id='var-'+v; el.onclick=()=>useVar(v);
+        el.innerHTML = `<span class="var-name">${v}</span><span class="var-value" id="val-${v}">0</span>`;
+        p.appendChild(el);
+    });
+}
+function updateVars() { varNames.forEach(v => { const el=document.getElementById('val-'+v); if(el) el.textContent=fmt(vars[v]); }); }
+function aUpdate() { document.getElementById('a-expr').textContent = aExpr || '0'; document.getElementById('a-res').textContent = aLast!==0 && aJust ? '= '+fmt(aLast) : ''; }
+function aNum(n) { if (aJust) { aExpr=''; aJust=false; } if (n==='.' && aExpr.split(/[+\-×÷^()]/).pop().includes('.')) return; aExpr+=n; aUpdate(); }
+function aOp(op) { aJust=false; aExpr+=op; aUpdate(); }
+function aFunc(f) { aJust=false; aExpr+=f; aUpdate(); }
+function aConst(c) { aJust=false; aExpr+=c; aUpdate(); }
+function aAns() { aJust=false; aExpr+='Ans'; aUpdate(); }
+function aSquare() { aJust=false; if(!aExpr || /[+\-×÷^]$/.test(aExpr)) aExpr+='^2'; else aExpr='('+aExpr+')^2'; aUpdate(); }
+function aSqrt() { aJust=false; if(!aExpr || /[+\-×÷^]$/.test(aExpr)) aExpr+='sqrt('; else aExpr='sqrt('+aExpr+')'; aUpdate(); }
+function aRecip() { aJust=false; if(!aExpr || /[+\-×÷^]$/.test(aExpr)) aExpr+='1/('; else aExpr='1/('+aExpr+')'; aUpdate(); }
+function aClear() { aExpr=''; aLast=0; aJust=false; aUpdate(); }
+function aDel() { if(aExpr==='Error') aExpr=''; else aExpr=aExpr.slice(0,-1); aUpdate(); }
+function fact(n) { if(n<0||!Number.isInteger(n)) return NaN; let r=1; for(let i=2;i<=n;i++)r*=i; return r; }
+function aCalc() {
+    if (!aExpr) return;
+    try {
+        let c = aExpr.replace(/×/g,'*').replace(/÷/g,'/').replace(/\^/g,'**')
+            .replace(/π/g,'Math.PI').replace(/\be\b/g,'Math.E').replace(/Ans/g,aLast)
+            .replace(/sin\(/g,'Math.sin(').replace(/cos\(/g,'Math.cos(').replace(/tan\(/g,'Math.tan(')
+            .replace(/log\(/g,'Math.log10(').replace(/ln\(/g,'Math.log(').replace(/sqrt\(/g,'Math.sqrt(')
+            .replace(/fact\(/g,'fact(');
+        varNames.forEach(v => { c=c.replace(new RegExp('\\b'+v+'\\b','g'), vars[v]); });
+        let r = new Function('Math','fact','"use strict"; return ('+c+')')(Math, fact);
+        if (!isFinite(r)||isNaN(r)) throw 0;
+        aLast=r; aJust=true; aExpr=String(fmt(r)); aUpdate();
+    } catch {
+        aExpr='Error'; aUpdate(); setTimeout(()=>{aExpr=''; aUpdate();}, 1200);
+    }
+}
+function toggleSto() {
+    stoMode=!stoMode;
+    document.getElementById('var-panel').classList.toggle('sto-active', stoMode);
+    const b=document.getElementById('sto-btn'); b.classList.toggle('active',stoMode); b.textContent=stoMode?'选择变量':'STO';
+}
+function useVar(v) {
+    if (stoMode) {
+        let val=aLast;
+        if (aExpr && aExpr!=='Error' && !aJust) {
+            try {
+                let c=aExpr.replace(/×/g,'*').replace(/÷/g,'/').replace(/\^/g,'**')
+                    .replace(/π/g,'Math.PI').replace(/\be\b/g,'Math.E').replace(/Ans/g,aLast)
+                    .replace(/sin\(/g,'Math.sin(').replace(/cos\(/g,'Math.cos(').replace(/tan\(/g,'Math.tan(')
+                    .replace(/log\(/g,'Math.log10(').replace(/ln\(/g,'Math.log(').replace(/sqrt\(/g,'Math.sqrt(')
+                    .replace(/fact\(/g,'fact(');
+                varNames.forEach(vn=>{c=c.replace(new RegExp('\\b'+vn+'\\b','g'), vars[vn]);});
+                val=new Function('Math','fact','"use strict"; return ('+c+')')(Math,fact);
+            } catch(e){}
+        }
+        vars[v]=val; stoMode=false;
+        document.getElementById('var-panel').classList.remove('sto-active');
+        document.getElementById('sto-btn').classList.remove('active');
+        document.getElementById('sto-btn').textContent='STO';
+        updateVars(); aUpdate();
+    } else {
+        if (aJust) { aExpr=''; aJust=false; }
+        aExpr+=v; aUpdate();
+    }
+}
+
+/* ==================== 绘图模式 - 通用画布 ==================== */
+const canvas = document.getElementById('graphCanvas');
+const ctx = canvas.getContext('2d');
+let scale = 40, offsetX = 0, offsetY = 0;
+
+function resizeCanvas() {
+    const wrap = document.getElementById('canvas-wrap');
+    canvas.width = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+    drawAll();
+}
+window.addEventListener('resize', resizeCanvas);
+
+function toScreen(x, y) {
+    const cx = canvas.width/2 + offsetX, cy = canvas.height/2 + offsetY;
+    return { x: cx + x*scale, y: cy - y*scale };
+}
+function toMath(sx, sy) {
+    const cx = canvas.width/2 + offsetX, cy = canvas.height/2 + offsetY;
+    return { x: (sx-cx)/scale, y: (cy-sy)/scale };
+}
+
+function drawGrid() {
+    const w = canvas.width, h = canvas.height;
+    const cx = w/2 + offsetX, cy = h/2 + offsetY;
+    ctx.clearRect(0,0,w,h);
+    
+    // 网格
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    const sx = Math.floor((-cx)/scale), ex = Math.ceil((w-cx)/scale);
+    const sy = Math.floor((cy-h)/scale), ey = Math.ceil(cy/scale);
+    for (let i=sx; i<=ex; i++) { ctx.beginPath(); ctx.moveTo(cx+i*scale,0); ctx.lineTo(cx+i*scale,h); ctx.stroke(); }
+    for (let i=sy; i<=ey; i++) { ctx.beginPath(); ctx.moveTo(0,cy-i*scale); ctx.lineTo(w,cy-i*scale); ctx.stroke(); }
+    
+    // 坐标轴
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(w,cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,h); ctx.stroke();
+    
+    // 刻度
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    for (let i=sx; i<=ex; i++) { if(i===0) continue; const x=cx+i*scale; ctx.fillText(i,x,cy+16); ctx.beginPath(); ctx.moveTo(x,cy-4); ctx.lineTo(x,cy+4); ctx.stroke(); }
+    ctx.textAlign = 'right';
+    for (let i=sy; i<=ey; i++) { if(i===0) continue; const y=cy-i*scale; ctx.fillText(i,cx-8,y+4); ctx.beginPath(); ctx.moveTo(cx-4,y); ctx.lineTo(cx+4,y); ctx.stroke(); }
+}
+
+/* ==================== 绘图模式 - 函数子模式 ==================== */
+let graphMode = 'function'; // 'function' | 'polygon'
+let graphFuncs = [];
+let graphVars = {}; // 变量当前值
+let graphVarDefs = {}; // 变量定义（默认值等）
+
+function switchGraphMode(mode) {
+    graphMode = mode;
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + mode).classList.add('active');
+    document.getElementById('function-controls').style.display = mode==='function' ? 'block' : 'none';
+    document.getElementById('polygon-controls').style.display = mode==='polygon' ? 'block' : 'none';
+    document.getElementById('canvas-wrap').style.cursor = mode==='function' ? 'crosshair' : 'crosshair';
+    drawAll();
+}
+
+function parseGraphExpr(expr) {
+    return expr.replace(/×/g,'*').replace(/÷/g,'/').replace(/\^/g,'**')
+        .replace(/π/g,'Math.PI').replace(/\be\b/g,'Math.E')
+        .replace(/sin\(/g,'Math.sin(').replace(/cos\(/g,'Math.cos(').replace(/tan\(/g,'Math.tan(')
+        .replace(/log\(/g,'Math.log10(').replace(/ln\(/g,'Math.log(')
+        .replace(/sqrt\(/g,'Math.sqrt(').replace(/abs\(/g,'Math.abs(');
+}
+
+function extractVars(expr) {
+    // 提取单字母变量，排除 x 和 e（因为e是常数）
+    const used = new Set();
+    const clean = expr.replace(/Math\.\w+/g, '').replace(/\b(sin|cos|tan|log|ln|sqrt|abs|pi|e)\b/gi, '');
+    const matches = clean.match(/[a-wyz]/gi);
+    if (matches) matches.forEach(m => used.add(m.toLowerCase()));
+    return Array.from(used);
+}
+
+function evalFunc(code, x, varValues) {
+    try {
+        let c = code;
+        for (let v in varValues) {
+            c = c.replace(new RegExp('\\b' + v + '\\b', 'g'), '(' + varValues[v] + ')');
+        }
+        c = c.replace(/\bx\b/g, '(' + x + ')');
+        return new Function('Math', '"use strict"; return (' + c + ')')(Math);
+    } catch(e) { return NaN; }
+}
+
+function addFunction() {
+    const input = document.getElementById('graph-input');
+    const expr = input.value.trim();
+    if (!expr) return;
+    const code = parseGraphExpr(expr);
+    // 验证
+    // try {
+    //     const test = evalFunc(code, 1, graphVars);
+    //     if (isNaN(test) && isNaN(evalFunc(code, 0, graphVars))) throw new Error();
+    // } catch(e) { alert('表达式无效，请检查语法'); return; }
+    
+    const colors = ['#00e5ff', '#ff9500', '#00ff88', '#ff3b30', '#af52de', '#ffcc00', '#ff6b9d', '#5ac8fa'];
+    const color = colors[graphFuncs.length % colors.length];
+    const fvars = extractVars(expr);
+    
+    // 为新变量创建滑动条
+    fvars.forEach(v => {
+        if (!(v in graphVars)) {
+            graphVars[v] = 1;
+            graphVarDefs[v] = { min: -100, max: 100, step: 0.1, default: 1 };
+            createVarSlider(v);
+        }
+    });
+    
+    graphFuncs.push({ expr, code, color, vars: fvars });
+    input.value = '';
+    updateFuncList();
+    drawAll();
+}
+
+function createVarSlider(v) {
+    const container = document.getElementById('var-sliders');
+    // 避免重复
+    if (document.getElementById('slider-'+v)) return;
+    
+    const item = document.createElement('div');
+    item.className = 'var-slider-item';
+    item.id = 'slider-wrap-'+v;
+    item.innerHTML = `
+        <span class="var-slider-label">${v}</span>
+        <input type="range" class="var-slider-input" id="slider-${v}" min="-100" max="100" step="0.1" value="${graphVars[v]}">
+        <span class="var-slider-val" id="slider-val-${v}">${graphVars[v]}</span>
+        <span class="remove" style="cursor:pointer;color:#ff3b30;opacity:0.6;font-size:1.1rem;" onclick="removeVar('${v}')">✕</span>
+    `;
+    container.appendChild(item);
+    
+    const range = item.querySelector('input');
+    range.addEventListener('input', (e) => {
+        graphVars[v] = parseFloat(e.target.value);
+        document.getElementById('slider-val-'+v).textContent = graphVars[v];
+        drawAll();
+    });
+}
+
+function removeVar(v) {
+    delete graphVars[v];
+    delete graphVarDefs[v];
+    const el = document.getElementById('slider-wrap-'+v);
+    if (el) el.remove();
+    // 如果没有任何函数使用此变量，只是移除滑动条；值仍保留在内存中直到刷新
+    drawAll();
+}
+
+function updateFuncList() {
+    const list = document.getElementById('func-list');
+    list.innerHTML = '';
+    graphFuncs.forEach((f, i) => {
+        const tag = document.createElement('span');
+        tag.className = 'func-tag';
+        tag.style.borderColor = f.color;
+        tag.innerHTML = `<span style="color:${f.color}">f${i+1}(x)=${f.expr}</span><span class="remove" onclick="removeFunc(${i})">✕</span>`;
+        list.appendChild(tag);
+    });
+}
+
+function removeFunc(i) {
+    graphFuncs.splice(i, 1);
+    updateFuncList();
+    drawAll();
+}
+
+function clearGraph() {
+    graphFuncs = [];
+    updateFuncList();
+    drawAll();
+}
+
+function zoom(factor) { scale *= factor; drawAll(); }
+function resetView() { scale = 40; offsetX = 0; offsetY = 0; drawAll(); }
+
+function drawFunctions() {
+    const w = canvas.width, h = canvas.height;
+    const cx = w/2 + offsetX, cy = h/2 + offsetY;
+    
+    graphFuncs.forEach(f => {
+        ctx.strokeStyle = f.color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        let first = true;
+        for (let px = 0; px <= w; px += 1.5) {
+            const x = (px - cx) / scale;
+            const y = evalFunc(f.code, x, graphVars);
+            if (!isFinite(y)) { first = true; continue; }
+            const py = cy - y * scale;
+            if (py < -2000 || py > h + 2000) { first = true; continue; }
+            if (first) { ctx.moveTo(px, py); first = false; }
+            else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+    });
+}
+
+/* ==================== 绘图模式 - 多边形子模式 ==================== */
+let polyPoints = []; // {x, y}
+let polySelected = -1; // 选中的顶点索引
+let polyPanMode = false;
+let isDragging = false, dragIdx = -1;
+let isPanning = false, panStart = {x:0, y:0};
+
+function switchGraphMode(mode) {
+    graphMode = mode;
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + mode).classList.add('active');
+    document.getElementById('function-controls').style.display = mode==='function' ? 'block' : 'none';
+    document.getElementById('polygon-controls').style.display = mode==='polygon' ? 'block' : 'none';
+    drawAll();
+}
+
+function clearPolygon() { polyPoints = []; polySelected = -1; updatePolyUI(); drawAll(); }
+function polyUndo() { if(polyPoints.length>0) { polyPoints.pop(); if(polySelected>=polyPoints.length) polySelected=-1; updatePolyUI(); drawAll(); } }
+
+function polyArea() {
+    if (polyPoints.length < 3) return 0;
+    let a = 0;
+    for (let i=0; i<polyPoints.length; i++) {
+        let j = (i+1) % polyPoints.length;
+        a += polyPoints[i].x * polyPoints[j].y - polyPoints[j].x * polyPoints[i].y;
+    }
+    return Math.abs(a) / 2;
+}
+
+function polyPerimeter() {
+    if (polyPoints.length < 2) return 0;
+    let p = 0;
+    for (let i=0; i<polyPoints.length; i++) {
+        let j = (i+1) % polyPoints.length;
+        if (polyPoints.length < 3 && i === polyPoints.length-1) break; // 不闭合
+        let dx = polyPoints[i].x - polyPoints[j].x;
+        let dy = polyPoints[i].y - polyPoints[j].y;
+        p += Math.sqrt(dx*dx + dy*dy);
+    }
+    return p;
+}
+
+function updatePolyUI() {
+    const area = polyArea();
+    const perim = polyPerimeter();
+    document.getElementById('poly-area').textContent = polyPoints.length >= 3 ? fmt(area) : '-';
+    document.getElementById('poly-perim').textContent = fmt(perim);
+    document.getElementById('poly-count').textContent = polyPoints.length;
+    
+    const list = document.getElementById('poly-points-list');
+    list.innerHTML = '';
+    polyPoints.forEach((pt, i) => {
+        const tag = document.createElement('span');
+        tag.className = 'poly-point-tag' + (i===polySelected ? ' selected' : '');
+        tag.innerHTML = `P${i+1}(${fmt(pt.x)}, ${fmt(pt.y)}) <span class="del-point" onclick="event.stopPropagation(); deletePolyPoint(${i})">✕</span>`;
+        tag.onclick = () => { polySelected = i; updatePolyUI(); drawAll(); };
+        list.appendChild(tag);
+    });
+}
+
+function deletePolyPoint(i) {
+    polyPoints.splice(i, 1);
+    if (polySelected === i) polySelected = -1;
+    else if (polySelected > i) polySelected--;
+    updatePolyUI();
+    drawAll();
+}
+
+function togglePolyPan() {
+    polyPanMode = !polyPanMode;
+    const btn = document.getElementById('btn-pan');
+    btn.classList.toggle('active', polyPanMode);
+    document.getElementById('canvas-wrap').style.cursor = polyPanMode ? 'grab' : 'crosshair';
+}
+
+function drawPolygon() {
+    if (polyPoints.length === 0) return;
+    
+    const cx = canvas.width/2 + offsetX, cy = canvas.height/2 + offsetY;
+    
+    // 填充
+    if (polyPoints.length >= 3) {
+        ctx.fillStyle = 'rgba(0, 255, 136, 0.08)';
+        ctx.beginPath();
+        polyPoints.forEach((p, i) => {
+            const sx = cx + p.x*scale, sy = cy - p.y*scale;
+            if (i===0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+        });
+        ctx.closePath();
+        ctx.fill();
+    }
+    
+    // 边线
+    ctx.strokeStyle = 'rgba(0, 255, 136, 0.6)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    polyPoints.forEach((p, i) => {
+        const sx = cx + p.x*scale, sy = cy - p.y*scale;
+        if (i===0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    });
+    if (polyPoints.length >= 3) ctx.closePath();
+    ctx.stroke();
+    
+    // 顶点
+    polyPoints.forEach((p, i) => {
+        const sx = cx + p.x*scale, sy = cy - p.y*scale;
+        const isSelected = i === polySelected;
+        ctx.beginPath();
+        ctx.arc(sx, sy, isSelected ? 7 : 5, 0, Math.PI*2);
+        ctx.fillStyle = isSelected ? '#00e5ff' : '#00ff88';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // 标签
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font = '11px sans-serif';
+        ctx.fillText(`P${i+1}(${fmt(p.x)},${fmt(p.y)})`, sx + 10, sy - 10);
+    });
+}
+
+/* ==================== 画布交互 ==================== */
+function drawAll() {
+    drawGrid();
+    if (graphMode === 'function') {
+        drawFunctions();
+        document.getElementById('graph-info').textContent = `函数: ${graphFuncs.length} | 缩放: ${Math.round(scale)}px/单位`;
+    } else {
+        drawPolygon();
+        document.getElementById('graph-info').textContent = `顶点: ${polyPoints.length} | 缩放: ${Math.round(scale)}px/单位 | 点击添加 · 拖拽移动`;
+    }
+}
+
+canvas.addEventListener('mousedown', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    
+    if (graphMode === 'polygon') {
+        // 检查是否点击了顶点
+        const cx = canvas.width/2 + offsetX, cy = canvas.height/2 + offsetY;
+        let hit = -1;
+        for (let i=polyPoints.length-1; i>=0; i--) {
+            const sx = cx + polyPoints[i].x*scale, sy = cy - polyPoints[i].y*scale;
+            if (Math.hypot(sx-mx, sy-my) < 12) { hit = i; break; }
+        }
+        
+        if (hit >= 0) {
+            if (polyPanMode) {
+                isPanning = true; panStart = {x: mx - offsetX, y: my - offsetY};
+            } else {
+                isDragging = true; dragIdx = hit; polySelected = hit;
+                updatePolyUI();
+            }
+        } else {
+            if (polyPanMode) {
+                isPanning = true; panStart = {x: mx - offsetX, y: my - offsetY};
+            } else {
+                // 添加新点
+                const mp = toMath(mx, my);
+                polyPoints.push({x: mp.x, y: mp.y});
+                polySelected = polyPoints.length - 1;
+                updatePolyUI();
+                drawAll();
+            }
+        }
+    } else {
+        // 函数模式：平移
+        isPanning = true;
+        panStart = {x: mx - offsetX, y: my - offsetY};
+    }
+});
+
+canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    
+    if (isDragging && dragIdx >= 0 && graphMode === 'polygon') {
+        const mp = toMath(mx, my);
+        polyPoints[dragIdx].x = mp.x;
+        polyPoints[dragIdx].y = mp.y;
+        updatePolyUI();
+        drawAll();
+    } else if (isPanning) {
+        offsetX = mx - panStart.x;
+        offsetY = my - panStart.y;
+        drawAll();
+    }
+});
+
+canvas.addEventListener('mouseup', () => {
+    isDragging = false; dragIdx = -1; isPanning = false;
+});
+
+canvas.addEventListener('mouseleave', () => {
+    isDragging = false; dragIdx = -1; isPanning = false;
+});
+
+canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.15 : 0.87;
+    scale *= factor;
+    drawAll();
+}, { passive: false });
+
+// 键盘删除顶点
+document.addEventListener('keydown', e => {
+    if (graphMode === 'polygon' && (e.key === 'Delete' || e.key === 'Backspace')) {
+        if (polySelected >= 0) {
+            deletePolyPoint(polySelected);
+        }
+    }
+});
+
+/* ==================== 通用辅助 ==================== */
+function fmt(n) {
+    if (typeof n !== 'number') return n;
+    if (Number.isInteger(n)) return n;
+    let s = n.toFixed(6);
+    return parseFloat(s);
+}
+
+/* ==================== 键盘支持 ==================== */
+document.addEventListener('keydown', e => {
+    const activePanel = document.querySelector('.panel.active').id;
+    if (activePanel === 'panel-normal') {
+        if (e.key >= '0' && e.key <= '9') nNum(e.key);
+        if (e.key === '.') nNum('.');
+        if (e.key === '+') nOp('+');
+        if (e.key === '-') nOp('-');
+        if (e.key === '*') nOp('×');
+        if (e.key === '/') nOp('÷');
+        if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); nCalc(); }
+        if (e.key === 'Escape') nClear();
+        if (e.key === 'Backspace') nDel();
+    }
+    else if (activePanel === 'panel-advanced') {
+        if (e.key >= '0' && e.key <= '9') aNum(e.key);
+        if (e.key === '.') aNum('.');
+        if (e.key === '+') aOp('+');
+        if (e.key === '-') aOp('-');
+        if (e.key === '*') aOp('×');
+        if (e.key === '/') aOp('÷');
+        if (e.key === '^') aOp('^');
+        if (e.key === '(') aOp('(');
+        if (e.key === ')') aOp(')');
+        if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); aCalc(); }
+        if (e.key === 'Escape') aClear();
+        if (e.key === 'Backspace') aDel();
+        const lower = e.key.toLowerCase();
+        if (varNames.includes(lower)) {
+            if (e.shiftKey) { if (!stoMode) toggleSto(); useVar(lower); }
+            else useVar(lower);
+        }
+    }
+    else if (activePanel === 'panel-graph') {
+        if (e.key === 'Enter' && graphMode === 'function') addFunction();
+    }
+});
+
+// 初始化
+initVars();
+updateVars();
+nUpdate();
+aUpdate();
+setTimeout(resizeCanvas, 100);
+</script>
+</body>
+</html>
