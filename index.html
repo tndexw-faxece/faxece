@@ -185,6 +185,7 @@
          nnbox.style.transform = `scale(7)`;
          setTimeout(() => {
             if (confirm("Do You Want Quit To Solve This Problem?")) {
+               window.close();
                history.back();
             }
          },1000)
