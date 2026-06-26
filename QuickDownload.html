@@ -1,0 +1,126 @@
+<style>
+   body{
+      background-color: rgb(1, 0, 24);
+      text-align: center;
+   }
+   h1{
+      color: rgb(0, 102, 255);
+      text-shadow: 0 0 20px rgb(0, 102, 255);
+      font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+   }
+   button{
+      padding: 20px 20px;
+      background-color: rgb(22, 21, 21);
+      box-shadow: 0 0 10px rgb(147, 205, 255);
+      font-family: Georgia, 'Times New Roman', Times, serif;
+      border-radius: 10px;
+   }
+   .tw{
+      border: 3px dashed #FF4C4C;
+      text-shadow: 0 0 15px #FF4C4C;
+      color: #FF4C4C;
+   }
+   .pcl{
+      border: 3px dashed #0068DE;
+      text-shadow: 0 0 15px #0068DE;
+      color: #0068DE;
+   }
+   .steam{
+      border: 3px dashed #0372A6;
+      text-shadow: 0 0 15px #0372A6;
+      color: #0372A6;
+   }
+   .obs{
+      border: 3px dashed #D6D4D6;
+      text-shadow: 0 0 15px #D6D4D6;
+      color: #D6D4D6;
+   }
+   b h1{
+      color: rgb(147, 205, 255);
+      font-family: 'Times New Roman', Times, serif;
+   }
+   h2{
+      color: white;
+      text-shadow: 0 0 20px white;
+   }
+   h4{
+      color: red;
+      text-shadow: 0 0 15px red;
+      font-family: "kaiti", "SimSun", "SimHei", sans-serif;
+   }
+   .head{
+      border-radius: 50%;
+      border: 4px solid white;
+      width: 300px;
+      height: 300px;
+      object-fit: cover;
+      box-shadow: 0 0 30px blue;
+   }
+   .logo{
+      width: 20px;
+      height: 20px;
+      gap: 8px;
+      vertical-align: middle;
+   }
+   a{
+      text-decoration: none;
+   }
+   a h3{
+      color: cadetblue;
+      text-shadow: 0 0 15px cadetblue;
+      font-family: Georgia, 'Times New Roman', Times, serif;
+   }
+</style>
+<title>法克西的Html</title>
+<h1 onclick="alert('不要乱戳法克西')">法 克 西 共 和 国</h1>
+<img src=Faxece.png class="head">
+<b>
+   <h1>F A X E C E republic</h1>
+</b>
+<h2>下载（Windows版，其他版本也许稍后更新）</h2>
+<h4>注意：有些下载链接可能连接速度较慢或被删除！</h4>
+
+<button id="downloadtw" class="tw"><img src="https://static.wikitide.net/pmodwiki/e/ef/TurboWarp_Desktop_icon.svg" class="logo">下载TurboWarp</button>
+<button id="downloadpcl2" class="pcl"><img src="pcllogo.png" class="logo">下载PlainCraftLauncher2</button>
+<button id="downloadsteam" class="steam"><img src="https://www.svgrepo.com/show/147290/steam-logo.svg" class="logo">下载Steam</button>
+<button id="downloadobs" class="obs"><img src="obslogo.png" class="logo">下载OBS studio</button>
+
+<a href="index.html">
+    <h3>
+        访问主页
+    </h3>
+</a>
+<script>
+    document.getElementById('downloadtw').addEventListener('click',function() {
+        const link = document.createElement('a');
+        link.href = "https://github.com/TurboWarp/desktop/releases/download/v1.16.0/TurboWarp-Setup-1.16.0-x64.exe";
+        link.download = "TurboWarp-Setup-1.16.0-x64.exe";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+    document.getElementById('downloadpcl2').addEventListener('click',function() {
+        const link2 = document.createElement('a');
+        link2.href = "https://github.com/Hex-Dragon/PCL2/releases/latest/download/PCL.zip";
+        link2.download = "Plain-Craft-Launcher-2-x64.zip";
+        document.body.appendChild(link2);
+        link2.click();
+        document.body.removeChild(link2);
+    });
+    document.getElementById('downloadsteam').addEventListener('click',function() {
+        const link3 = document.createElement('a');
+        link3.href = "https://cdn.cloudflare.steamstatic.com/client/installer/SteamSetup.exe";
+        link3.download = "Steam-Setup-x64.exe";
+        document.body.appendChild(link3);
+        link3.click();
+        document.body.removeChild(link3);
+    });
+    document.getElementById('downloadobs').addEventListener('click',function() {
+        const link4 = document.createElement('a');
+        link4.href = "https://cdn-fastly.obsproject.com/downloads/OBS-Studio-32.1.2-Windows-x64-Installer.exe";
+        link4.download = "OBS-Studio-Setup-x64.exe";
+        document.body.appendChild(link4);
+        link4.click();
+        document.body.removeChild(link4);
+    });
+</script>

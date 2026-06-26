@@ -16,10 +16,18 @@
       color: white;
       text-shadow: 0 0 20px white;
    }
-   img{
+   .pic1{
       width: 800px;
       height: 2800px;
       box-shadow: 0 0 30px white;
+   }
+   .head{
+      border-radius: 50%;
+      border: 4px solid white;
+      width: 300px;
+      height: 300px;
+      object-fit: cover;
+      box-shadow: 0 0 30px blue;
    }
    a{
       text-decoration: none;
@@ -52,7 +60,7 @@
 </style>
 <title>法克西的Python</title>
 <h1 onclick="alert('不要乱戳法克西')">法 克 西 共 和 国</h1>
-<!-- <img src=Faxece.png> -->
+<img src=Faxece.png class="head">
 <b>
    <h1>F A X E C E republic</h1>
 </b>
@@ -85,7 +93,7 @@
 </code></pre>
 <h2>其中flush是是否换行，默认是True；end指末尾的字符，如视频里的<code><pre><span class="string">" "</span></code></pre>嘻嘻。</h2>
 <h2>这只是一个基础教程，大家可以看下面这个图片来了解</h2>
-<img src="Python1.png">
+<img src="Python1.png" class="pic1">
 <h2>自己试着运行一下！</h2>
 <h2>有些需要下载库才能运行，向上面的pygame、LaTeX（manim）这些。LaTeX的较为复杂，自行查阅。pygame（演示pip下载，所以要先下载pip）需要在终端输入：</h2>
 <code>pip install pygame</code>
