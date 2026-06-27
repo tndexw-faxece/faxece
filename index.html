@@ -14,6 +14,7 @@
       border: 10px double rgb(0, 102, 255);
       border-style: double dashed;
       box-shadow: 0 0 20px rgb(0, 102, 255);
+      font-family: "kaiti", "SimSun", "SimHei", sans-serif;
    }
    b h1{
       color: rgb(147, 205, 255);
@@ -26,7 +27,20 @@
    h2{
       color: white;
       text-shadow: 0 0 20px white;
+      transition: all 0.3s ease;
    }
+   .h2-box{ 
+      display: inline-block; 
+      position: relative; 
+      cursor: pointer; 
+      margin: 10px 0; 
+   } 
+   .h2-box:hover h2{ transform: scale(1.15); 
+      text-shadow: 0 0 30px white, 0 0 50px rgb(0, 102, 255); 
+   }
+   a.h2-box:hover h2{ 
+      color: rgb(147, 205, 255); 
+   } 
    img{
       border-radius: 50%;
       border: 4px solid white;
@@ -91,9 +105,41 @@
       transition: all 0.5s;
    }
    .hidden{ visibility: hidden;}
+
+   .tooltip{ 
+      position: fixed;
+      background: rgba(0, 102, 255, 0.9); 
+      color: #fff; 
+      padding: 6px 14px; 
+      border-radius: 6px; 
+      font-size: 14px; 
+      white-space: nowrap; 
+      opacity: 0; 
+      visibility: hidden; 
+      transition: opacity 0.2s; 
+      pointer-events: none; 
+      z-index: 1000; 
+      box-shadow: 0 0 15px 
+      rgba(0, 102, 255, 0.5); 
+   } 
+   .tooltip::after{ 
+      content: '';
+      position: absolute; 
+      top: 100%; 
+      left: 50%; 
+      transform: translateX(-50%);
+      border: 6px solid transparent; 
+      border-top-color: rgba(0, 102, 255, 0.9); 
+   } 
+   .tooltip.show{ 
+      opacity: 1; 
+      visibility: visible; 
+   } 
 </style>
 <title>法克西的主页</title>
-<h1 class="title" onclick="alert('不要乱戳法克西，有本事就戳 F A X E C E republic')">法 克 西 第 二 共 和 国</h1>
+<h1 class="title" onclick="alert('不要乱戳法克西，有本事就戳 F A X E C E republic')">
+-&#8955;&#5781;&#2026;&#938;&#936;&#8804;[法 克 西 第 二 共 和 国]&#8805;&#936;&#938;&#2026;&#5781;&#8955;-
+</h1>
 <img src=Faxece.png onclick="alert('不要乱戳法克西，有本事就戳 F A X E C E republic')">
 <b>
    <h1 onclick="fackxece()">F A X E C E Second Republic</h1>
@@ -106,13 +152,16 @@
 
 <h2>↓各种玩意↓</h2>
 
-<a href="FaxecePage.html">     <h2>法克西介绍  </h2></a>
-<a href="CodingPage.html">     <h2>编程教程    </h2></a>
-<a href="LittleGamePage.html"> <h2>小游戏      </h2></a>
-<a href="ToolsPage.html">      <h2>小工具      </h2></a>
-<a href="NewsPage.html">       <h2>新闻        </h2></a>
-<a href="DrawPage.html">       <h2>法克西的作品 </h2></a>
-<a href="QuickDownload.html">  <h2>快速下载     </h2></a>
+<br><a href="FaxecePage.html" class="h2-box" data-tooltip="关于法克西的基本信息">      <h2>法克西介绍  </h2></a>
+<br><a href="CodingPage.html" class="h2-box" data-tooltip="法克西的编程教程">          <h2>编程教程    </h2></a>
+<br><a href="LittleGamePage.html" class="h2-box" data-tooltip="法克西的小游戏集合">    <h2>小游戏      </h2></a>
+<br><a href="ToolsPage.html" class="h2-box" data-tooltip="法克西的一些工具">           <h2>小工具      </h2></a>
+<br><a href="NewsPage.html" class="h2-box" data-tooltip="法克西的动态">                <h2>新闻        </h2></a>
+<br><a href="DrawPage.html" class="h2-box" data-tooltip="法克西在b站的作品">           <h2>法克西的作品 </h2></a>
+<br><a href="QuickDownload.html" class="h2-box" data-tooltip="法克西提供的快速下载链接"><h2>快速下载     </h2></a>
+<br><a href="QuickLink.html" class="h2-box" data-tooltip="法克西提供的快速网址链接">    <h2>快速预设     </h2></a>
+
+<div class="tooltip" id="tooltip"></div>
 
 <!-- 依旧法克西逆天翻译好吧 -->
 <script>
@@ -179,4 +228,20 @@
          },1000)
       },2420)
    }
+   const tooltip = document.getElementById('tooltip'); 
+   document.querySelectorAll('.h2-box').forEach(box => { box.addEventListener('mouseenter', () => { 
+         tooltip.textContent = box.dataset.tooltip; 
+         tooltip.classList.add('show'); 
+      }); 
+      
+      box.addEventListener('mousemove', (e) => { 
+         tooltip.style.left = e.clientX + 'px'; 
+         tooltip.style.top = (e.clientY - 45) + 'px'; 
+         tooltip.style.transform = 'translateX(-50%)'; 
+      }); 
+      
+      box.addEventListener('mouseleave', () => { 
+         tooltip.classList.remove('show'); 
+      });
+   }); 
 </script>

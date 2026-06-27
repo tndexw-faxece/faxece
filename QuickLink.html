@@ -1,0 +1,121 @@
+<style> 
+    body{ 
+        background-color: rgb(1, 0, 24); 
+        text-align: center; 
+    } 
+    h1{ 
+        color: rgb(0, 102, 255); 
+        text-shadow: 0 0 20px rgb(0, 102, 255); 
+        font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; 
+    } 
+    b h1{ 
+        color: rgb(147, 205, 255); 
+        font-family: 'Times New Roman', Times, serif; 
+    }
+    .h2-box{ 
+        display: inline-block; 
+        position: relative; 
+        cursor: pointer; 
+        margin: 10px 0; 
+    } 
+    h2{ color: white; 
+        text-shadow: 
+        0 0 20px white; 
+        transition: all 0.3s ease; 
+        display: inline-block; 
+        border-radius: 8px; 
+    }
+    .h2-box:hover h2{ transform: scale(1.15); 
+        text-shadow: 0 0 30px white, 0 0 50px rgb(0, 102, 255); 
+    }
+    a.h2-box:hover h2{ 
+        color: rgb(147, 205, 255); 
+    } 
+    img{ 
+        border-radius: 50%; 
+        border: 4px solid white; 
+        width: 300px; 
+        height: 300px; 
+        object-fit: cover; 
+        box-shadow: 0 0 30px blue; 
+    } 
+    a{ 
+        text-decoration: none; 
+        display: inline-block; 
+    } 
+    a h3{ 
+        color: cadetblue; 
+        text-shadow: 0 0 15px cadetblue; 
+        font-family: Georgia, 'Times New Roman', Times, serif;
+    }
+    .tooltip{ 
+        position: fixed;
+        background: rgba(0, 102, 255, 0.9); 
+        color: #fff; 
+        padding: 6px 14px; 
+        border-radius: 6px; 
+        font-size: 14px; 
+        white-space: nowrap; 
+        opacity: 0; 
+        visibility: hidden; 
+        transition: opacity 0.2s; 
+        pointer-events: none; 
+        z-index: 1000; 
+        box-shadow: 0 0 15px 
+        rgba(0, 102, 255, 0.5); 
+    } 
+    .tooltip::after{ 
+        content: '';
+        position: absolute; 
+        top: 100%; 
+        left: 50%; 
+        transform: translateX(-50%);
+        border: 6px solid transparent; 
+        border-top-color: rgba(0, 102, 255, 0.9); 
+    } 
+    .tooltip.show{ 
+        opacity: 1; 
+        visibility: visible; 
+    } 
+</style> 
+<title>法克西的快速预设</title> 
+<h1 onclick="alert('不要乱戳法克西')">法 克 西 共 和 国</h1> 
+<img src="Faxece.png"> 
+<b> <h1>F A X E C E republic</h1> </b>
+<h2>↓各种链接↓</h2>
+<br><a href="https://bilibili.com" class="h2-box" data-tooltip="https://bilibili.com点击进入B站">
+<h2>B站</h2></a>
+<br><a href="https://obsproject.com/welcome" class="h2-box" data-tooltip="https://obsproject.com/welcome点击进入OBS官网">
+<h2>OBS Studio</h2></a>
+<br><a href="https://microsoft.com" class="h2-box" data-tooltip="https://microsoft.com点击进入微软官网">
+<h2>Microsoft微软</h2></a>
+<br><a href="https://store.steampowered.com" class="h2-box" data-tooltip="https://store.steampowered.com点击进入Steam商店">
+<h2>Steam</h2></a>
+<br><a href="https://github.com" class="h2-box" data-tooltip="https://github.com点击进入Github">
+<h2>Github</h2></a> 
+<br>
+
+<a href="index.html">
+    <h3>访问主页</h3>
+</a>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script> 
+    const tooltip = document.getElementById('tooltip'); 
+    document.querySelectorAll('.h2-box').forEach(box => { box.addEventListener('mouseenter', () => { 
+            tooltip.textContent = box.dataset.tooltip; 
+            tooltip.classList.add('show'); 
+        }); 
+        
+        box.addEventListener('mousemove', (e) => { 
+            tooltip.style.left = e.clientX + 'px'; 
+            tooltip.style.top = (e.clientY - 45) + 'px'; 
+            tooltip.style.transform = 'translateX(-50%)'; 
+        }); 
+        
+        box.addEventListener('mouseleave', () => { 
+            tooltip.classList.remove('show'); 
+        });
+    }); 
+</script>
