@@ -16,6 +16,21 @@
       box-shadow: 0 0 20px rgb(0, 102, 255);
       font-family: "kaiti", "SimSun", "SimHei", sans-serif;
    }
+   .searchbox{
+      margin: 20px;
+   }
+   input{
+      width: 300px;
+      height: 35px;
+      padding: 0 10px;
+      color: rgb(147, 205, 255);
+   }
+   .items{
+      margin: 20px;
+   }
+   #results{
+      margin: 20px;
+   }
    b h1{
       color: rgb(147, 205, 255);
       font-family: 'Times New Roman', Times, serif;
@@ -105,6 +120,7 @@
       transition: all 0.5s;
    }
    .hidden{ visibility: hidden;}
+   .hidden2{ display: none;}
 
    .tooltip{ 
       position: fixed;
@@ -152,14 +168,17 @@
 
 <h2>↓各种玩意↓</h2>
 
-<br><a href="FaxecePage.html" class="h2-box" data-tooltip="关于法克西的基本信息">      <h2>法克西介绍  </h2></a>
-<br><a href="CodingPage.html" class="h2-box" data-tooltip="法克西的编程教程">          <h2>编程教程    </h2></a>
-<br><a href="LittleGamePage.html" class="h2-box" data-tooltip="法克西的小游戏集合">    <h2>小游戏      </h2></a>
-<br><a href="ToolsPage.html" class="h2-box" data-tooltip="法克西的一些工具">           <h2>小工具      </h2></a>
-<br><a href="NewsPage.html" class="h2-box" data-tooltip="法克西的动态">                <h2>新闻        </h2></a>
-<br><a href="DrawPage.html" class="h2-box" data-tooltip="法克西在b站的作品">           <h2>法克西的作品 </h2></a>
-<br><a href="QuickDownload.html" class="h2-box" data-tooltip="法克西提供的快速下载链接"><h2>快速下载     </h2></a>
-<br><a href="QuickLink.html" class="h2-box" data-tooltip="法克西提供的快速网址链接">    <h2>快速预设     </h2></a>
+<input type="text" id="searchInput" placeholder="搜索工具..." oninput="search()" class="search-box">
+<div id="results">
+<br><a href="FaxecePage.html" class="h2-box" data-tooltip="关于法克西的基本信息" data-title="法克西介绍 fakexijieshao faxece">          <h2>法克西介绍  </h2></a>
+<br><a href="CodingPage.html" class="h2-box" data-tooltip="法克西的编程教程" data-title="编程教程 bianchengjiaocheng coding">           <h2>编程教程    </h2></a>
+<br><a href="LittleGamePage.html" class="h2-box" data-tooltip="法克西的小游戏集合" data-title="小游戏 xiaoyouxi littlegame">            <h2>小游戏      </h2></a>
+<br><a href="ToolsPage.html" class="h2-box" data-tooltip="法克西的一些工具" data-title="小工具 xiaogongju littletools">                 <h2>小工具      </h2></a>
+<br><a href="NewsPage.html" class="h2-box" data-tooltip="法克西的动态" data-title="新闻 动态 xinwen dongtai news">                      <h2>新闻        </h2></a>
+<br><a href="DrawPage.html" class="h2-box" data-tooltip="法克西在b站的作品" data-title="法克西的作品 做品 fakexidezuopin faxece">        <h2>法克西的作品 </h2></a>
+<br><a href="QuickDownload.html" class="h2-box" data-tooltip="法克西提供的快速下载链接" data-title="快速下载 kuaisuxiazai quickdownload"><h2>快速下载     </h2></a>
+<br><a href="QuickLink.html" class="h2-box" data-tooltip="法克西提供的快速网址链接" data-title="快速预设 kuaisuyushe quicklink">         <h2>快速预设     </h2></a>
+</div>
 
 <div class="tooltip" id="tooltip"></div>
 
@@ -244,4 +263,17 @@
          tooltip.classList.remove('show'); 
       });
    }); 
+   function search() {
+      let keyword = document.getElementById("searchInput").value.toLowerCase();
+      let items = document.querySelectorAll(".h2-box");
+
+      items.forEach(item => {
+         let title = item.getAttribute("data-title").toLowerCase();
+         if (title.includes(keyword)) {
+            item.classList.remove("hidden2");
+         } else {
+            item.classList.add("hidden2");
+         }
+      })
+   }
 </script>
