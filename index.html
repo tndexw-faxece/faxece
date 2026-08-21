@@ -68,17 +68,24 @@
       text-decoration: none;
    }
    @keyframes UpDownMove{
-      0% {transform: translateY(7px);}
-      100% {transform: translateY(-20px);}
+      0% {transform: translateY(10px);}
+      100% {transform: translateY(-10px);}
    }
    @keyframes LeftRightMove{
-      0% {transform: translateX(5px);}
-      100% {transform: translateX(-5px);}
+      0% {transform: translateX(10px);}
+      100% {transform: translateX(-10px);}
    }
-   a h1{
+   .bilibili{
       color: coral;
       text-shadow: 0 0 15px coral;
       animation: UpDownMove 1.5s ease-in-out infinite alternate;
+      font-family: Georgia, 'Times New Roman', Times, serif;
+      font-size: 2rem;
+   }
+   .youtube{
+      color: coral;
+      text-shadow: 0 0 15px coral;
+      animation: LeftRightMove 1.7s ease-in-out infinite alternate;
       font-family: Georgia, 'Times New Roman', Times, serif;
       font-size: 2rem;
    }
@@ -161,23 +168,27 @@
    <h1 onclick="fackxece()">F A X E C E Second Republic</h1>
 </b>
 <a href="https://space.bilibili.com/522081333" target="_blank">
-   <h1>
+   <h1 class="youtube">
       点击跳转bilibili链接
    </h1>
 </a>
-
+<a href="https://www.youtube.com/channel/UCKUhbkBW45vNkWw5NcucC6w" target="_blank">
+   <h1 class="bilibili">
+      点击跳转youtube链接
+   </h1>
+</a>
 <h2>↓各种玩意↓</h2>
 
 <input type="text" id="searchInput" placeholder="搜索工具..." oninput="search()" class="search-box">
 <div id="results">
-<br><a href="FaxecePage.html" class="h2-box" data-tooltip="关于法克西的基本信息" data-title="法克西介绍 fakexijieshao faxece">          <h2>法克西介绍  </h2></a>
-<br><a href="CodingPage.html" class="h2-box" data-tooltip="法克西的编程教程" data-title="编程教程 bianchengjiaocheng coding">           <h2>编程教程    </h2></a>
-<br><a href="LittleGamePage.html" class="h2-box" data-tooltip="法克西的小游戏集合" data-title="小游戏 xiaoyouxi littlegame">            <h2>小游戏      </h2></a>
-<br><a href="ToolsPage.html" class="h2-box" data-tooltip="法克西的一些工具" data-title="小工具 xiaogongju littletools">                 <h2>小工具      </h2></a>
-<br><a href="NewsPage.html" class="h2-box" data-tooltip="法克西的动态" data-title="新闻 动态 xinwen dongtai news">                      <h2>新闻        </h2></a>
-<br><a href="DrawPage.html" class="h2-box" data-tooltip="法克西在b站的作品" data-title="法克西的作品 做品 fakexidezuopin faxece">        <h2>法克西的作品 </h2></a>
-<br><a href="QuickDownload.html" class="h2-box" data-tooltip="法克西提供的快速下载链接" data-title="快速下载 kuaisuxiazai quickdownload"><h2>快速下载     </h2></a>
-<br><a href="QuickLink.html" class="h2-box" data-tooltip="法克西提供的快速网址链接" data-title="快速预设 kuaisuyushe quicklink">         <h2>快速预设     </h2></a>
+<br><a href="FaxecePage.html" class="h2-box" data-tooltip="关于法克西的基本信息" data-title="法克西介绍 fa'ke'xi'jie'shao faxece">          <h2>法克西介绍  </h2></a>
+<br><a href="CodingPage.html" class="h2-box" data-tooltip="法克西的编程教程" data-title="编程教程 bian'cheng'jiao'cheng codingtutorial">           <h2>编程教程    </h2></a>
+<br><a href="LittleGamePage.html" class="h2-box" data-tooltip="法克西的小游戏集合" data-title="小游戏 xiao'you'xi littlegame">            <h2>小游戏      </h2></a>
+<br><a href="ToolsPage.html" class="h2-box" data-tooltip="法克西的一些工具" data-title="小工具 xiao'gong'ju littletools">                 <h2>小工具      </h2></a>
+<br><a href="NewsPage.html" class="h2-box" data-tooltip="法克西的动态" data-title="新闻 动态 xin'wen dong'tai news">                      <h2>新闻        </h2></a>
+<br><a href="DrawPage.html" class="h2-box" data-tooltip="法克西在b站的作品" data-title="法克西的作品 做品 fa'ke'xi'de'zuo'pin faxece">        <h2>法克西的作品 </h2></a>
+<br><a href="QuickDownload.html" class="h2-box" data-tooltip="法克西提供的快速下载链接" data-title="快速下载 kuai'su'xia'zai quickdownload"><h2>快速下载     </h2></a>
+<br><a href="QuickLink.html" class="h2-box" data-tooltip="法克西提供的快速网址链接" data-title="快速预设 kuai'su'yu'she quicklink">         <h2>快速预设     </h2></a>
 </div>
 
 <div class="tooltip" id="tooltip"></div>

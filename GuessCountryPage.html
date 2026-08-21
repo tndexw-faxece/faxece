@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌍 猜国家名游戏 · 智能策略分析器 v5.0</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#0a0a1a,#1a1a3e,#0f0f2e);min-height:100vh;color:#e0e0e0;padding:16px}
+.container{max-width:1100px;margin:0 auto}
+h1{text-align:center;font-size:26px;background:linear-gradient(90deg,#ffd700,#ff6b6b,#4dabf7,#00d26a);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{text-align:center;color:#666;font-size:13px;margin-bottom:16px}
+.panel{background:rgba(255,255,255,0.05);border-radius:16px;padding:18px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.06);backdrop-filter:blur(10px)}
+.panel-title{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;color:#ffd700}
+.mode-tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.mode-tab{flex:1;min-width:140px;padding:10px 14px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#888;border-radius:12px;cursor:pointer;font-weight:600;text-align:center;transition:all .2s;font-size:14px}
+.mode-tab.active{background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;box-shadow:0 0 20px rgba(255,215,0,0.1)}
+.hidden{display:none!important}
+.fill-board{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:16px 0;padding:16px;background:rgba(0,0,0,0.2);border-radius:14px;min-height:60px;align-items:flex-start}
+.fill-slot{width:46px;min-height:52px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:22px;font-weight:800;cursor:pointer;transition:all .15s;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;position:relative;padding:4px 0}
+.fill-slot:hover{transform:scale(1.08);border-color:rgba(255,215,0,0.5)}
+.fill-slot.empty{color:rgba(255,255,255,0.2);font-size:28px}
+.fill-slot.empty:hover{color:rgba(255,215,0,0.6)}
+.fill-slot.space{width:20px;background:transparent;border:none;cursor:default;min-height:auto}
+.fill-slot.filled{background:linear-gradient(135deg,#00d26a,#00b894);border-color:rgba(0,210,106,0.5);box-shadow:0 0 12px rgba(0,210,106,0.3)}
+.fill-slot.filled.selected{border-color:#ffd700;box-shadow:0 0 0 3px rgba(255,215,0,0.3)}
+.fill-slot.recommended{animation:glow 1.5s infinite;border-color:#ffd700}
+.fill-slot .slot-excluded{font-size:9px;color:#ff6b6b;font-weight:600;margin-top:2px;max-width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,215,0,0.3)}50%{box-shadow:0 0 0 6px rgba(255,215,0,0)}}
+.letter-keyboard{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin:12px 0}
+@media(max-width:600px){.letter-keyboard{grid-template-columns:repeat(7,1fr)}}
+.key-btn{aspect-ratio:1;border:none;border-radius:10px;font-size:16px;font-weight:800;cursor:pointer;transition:all .12s;color:white;background:rgba(255,255,255,0.1)}
+.key-btn:hover{transform:scale(1.1);background:rgba(255,255,255,0.2)}
+.key-btn:active{transform:scale(0.95)}
+.key-btn.used{opacity:0.3;cursor:not-allowed}
+.key-btn.highlight{background:linear-gradient(135deg,#ffd700,#f39c12);color:#1a1a2e}
+.key-btn.excluded-pos{background:linear-gradient(135deg,#ff6b6b,#c0392b);opacity:0.5}
+.key-btn.excluded-global{background:linear-gradient(135deg,#444,#222);opacity:0.35;cursor:not-allowed;text-decoration:line-through}
+.pattern-input-wrap{display:flex;gap:10px;align-items:stretch;margin-bottom:12px}
+.pattern-input{flex:1;padding:14px 18px;font-size:20px;font-weight:700;letter-spacing:4px;background:rgba(0,0,0,0.3);border:2px solid rgba(255,255,255,0.1);border-radius:12px;color:#ffd700;text-align:center;font-family:'Courier New',monospace;outline:none}
+.pattern-input:focus{border-color:rgba(255,215,0,0.5)}
+.pattern-input::placeholder{color:rgba(255,255,255,0.2);font-size:14px;letter-spacing:1px}
+.action-btn{padding:12px 22px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap}
+.action-btn:hover{transform:translateY(-2px);filter:brightness(1.1)}
+.action-btn:disabled{opacity:0.3;cursor:not-allowed;transform:none;filter:none}
+.btn-gold{background:linear-gradient(135deg,#ffd700,#f39c12);color:#1a1a2e}
+.btn-green{background:linear-gradient(135deg,#00d26a,#00b894);color:#fff}
+.btn-red{background:linear-gradient(135deg,#ff6b6b,#e74c3c);color:#fff}
+.btn-blue{background:linear-gradient(135deg,#4dabf7,#339af0);color:#fff}
+.btn-purple{background:linear-gradient(135deg,#9775fa,#7950f2);color:#fff}
+.btn-orange{background:linear-gradient(135deg,#ff9f43,#ee5a24);color:#fff}
+.btn-dark{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.15)}
+.hint-text{font-size:12px;color:#666;margin-bottom:8px}
+.rec-card{background:linear-gradient(90deg,rgba(255,215,0,0.12),rgba(0,210,106,0.12));border:1px solid rgba(255,215,0,0.25);border-radius:12px;padding:14px;margin:10px 0}
+.rec-card .rec-title{font-size:16px;font-weight:800;color:#ffd700;margin-bottom:6px}
+.rec-card .rec-detail{font-size:13px;color:#aaa;line-height:1.6}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}
+.stat-card{background:rgba(255,255,255,0.04);border-radius:10px;padding:10px;text-align:center;border:1px solid rgba(255,255,255,0.05)}
+.stat-value{font-size:22px;font-weight:800;color:#ffd700}
+.stat-label{font-size:11px;color:#888;margin-top:3px}
+.country-list{max-height:260px;overflow-y:auto;background:rgba(0,0,0,0.2);border-radius:10px;padding:10px;margin-top:8px}
+.country-list::-webkit-scrollbar{width:5px}
+.country-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:3px}
+.country-tag{display:inline-block;padding:4px 10px;margin:3px;background:rgba(255,255,255,0.07);border-radius:6px;font-size:12px;cursor:pointer;transition:all .15s;border:1px solid transparent}
+.country-tag:hover{background:rgba(255,215,0,0.2);border-color:rgba(255,215,0,0.4);transform:scale(1.05)}
+.country-tag.highlight{background:rgba(255,215,0,0.25);border-color:#ffd700;color:#ffd700;font-weight:700}
+.country-tag .cn{font-size:10px;color:#888;margin-left:4px}
+.letter-board{display:grid;grid-template-columns:repeat(13,1fr);gap:5px;margin-bottom:12px}
+@media(max-width:600px){.letter-board{grid-template-columns:repeat(7,1fr)}}
+.letter-btn{aspect-ratio:1;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;transition:all .15s;color:white;position:relative;overflow:hidden}
+.letter-btn:hover{transform:scale(1.08)}
+.letter-btn:active{transform:scale(0.95)}
+.letter-btn.unknown{background:rgba(255,255,255,0.1)}
+.letter-btn.has{background:linear-gradient(135deg,#00d26a,#00b894);box-shadow:0 0 10px rgba(0,210,106,0.3)}
+.letter-btn.no{background:linear-gradient(135deg,#ff6b6b,#e74c3c);box-shadow:0 0 10px rgba(255,107,107,0.3)}
+.letter-btn.recommended{animation:pulse 1.5s infinite;border:2px solid #ffd700}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,215,0,0.3)}50%{box-shadow:0 0 0 6px rgba(255,215,0,0)}}
+.btn-group{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;justify-content:center}
+.entropy-bar{height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;margin-top:3px}
+.entropy-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#ffd700,#ff6b6b)}
+.letter-analysis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px;margin-top:8px}
+.letter-row{display:flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:12px}
+.letter-row .l{width:18px;font-weight:800;color:#4dabf7}
+.letter-row .info{flex:1;color:#888}
+.letter-row .score{color:#ffd700;font-weight:700;min-width:44px;text-align:right}
+.difficulty-card{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:8px;margin:4px 0;border-left:3px solid #ffd700;cursor:pointer;transition:all .15s;font-size:13px}
+.difficulty-card:hover{background:rgba(255,255,255,0.08);transform:translateX(3px)}
+.difficulty-card .name{font-weight:700}
+.difficulty-card .meta{font-size:11px;color:#888}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);background:rgba(0,0,0,0.9);color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;z-index:1000;transition:transform .3s;border:1px solid rgba(255,215,0,0.3)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.hint-system{background:rgba(0,0,0,0.15);border-radius:12px;padding:14px;margin-top:12px}
+.hint-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.hint-select{padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#e0e0e0;font-size:14px;outline:none;cursor:pointer;min-width:140px}
+.hint-select option{background:#1a1a3e;color:#e0e0e0}
+.hint-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(77,171,247,0.15);border:1px solid rgba(77,171,247,0.3);border-radius:20px;font-size:13px;color:#4dabf7;margin:3px;cursor:default}
+.hint-tag .remove{cursor:pointer;color:#ff6b6b;font-weight:700;font-size:16px;line-height:1}
+.hint-tag .remove:hover{color:#ff4757;transform:scale(1.2)}
+.hint-custom-input{flex:1;min-width:200px;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#e0e0e0;font-size:14px;outline:none}
+.hint-custom-input::placeholder{color:rgba(255,255,255,0.3)}
+.slot-analysis-card{margin:8px 0;padding:10px;background:rgba(255,255,255,0.04);border-radius:10px;border-left:3px solid #4dabf7}
+.slot-analysis-card .slot-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.slot-analysis-card .slot-title{font-weight:700;color:#4dabf7;font-size:14px}
+.slot-analysis-card .slot-meta{font-size:12px;color:#888}
+.slot-chips{display:flex;gap:6px;flex-wrap:wrap}
+.slot-chip{padding:3px 8px;background:rgba(255,215,0,0.15);border-radius:4px;font-size:12px;color:#ffd700}
+.slot-chip.secondary{background:rgba(255,255,255,0.08);color:#aaa}
+.pos-input-section{margin-top:12px;padding:14px;background:rgba(0,0,0,0.2);border-radius:12px;border:1px solid rgba(255,215,0,0.2)}
+.pos-input-title{font-size:14px;color:#ffd700;font-weight:700;margin-bottom:8px}
+.pos-input-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.pos-input-text{padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#ffd700;font-size:16px;font-weight:700;width:200px;text-align:center;outline:none;font-family:'Courier New',monospace}
+.pos-input-text::placeholder{color:rgba(255,255,255,0.3);font-size:13px}
+.pos-preview{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.pos-preview-tag{padding:4px 10px;background:rgba(0,210,106,0.15);border:1px solid rgba(0,210,106,0.3);border-radius:6px;font-size:13px;color:#00d26a}
+.pos-hint-text{font-size:12px;color:#888;margin-top:6px}
+</style>
+<base target="_blank">
+<base target="_blank">
+</head>
+<body>
+<div class="container">
+<h1>🌍 猜国家名游戏 · 智能策略分析器 v5.0</h1>
+<div class="subtitle">193个国家 · 中英文 · 信息熵 · 有无猜测+位置 · 完全离线</div>
+<div class="mode-tabs">
+<div class="mode-tab active" onclick="switchMode('fill')">🧩 填空模式</div>
+<div class="mode-tab" onclick="switchMode('attack')">⚔️ 字母猜测</div>
+<div class="mode-tab" onclick="switchMode('defense')">🛡️ 防守选国</div>
+</div>
+
+<div id="fillMode">
+<div class="panel">
+<div class="panel-title">📝 输入模式（_ 表示未知，空格表示空格）</div>
+<div class="hint-text">示例: "_ _ _ _" = 4字母国家 | "U _ _ _ _ _   S _ _ _ _ _" = United States</div>
+<div class="pattern-input-wrap">
+<input type="text" class="pattern-input" id="patternInput" placeholder="输入模式，如: _ _ _ _" onkeydown="if(event.key==='Enter')applyPattern()">
+<button class="action-btn btn-gold" onclick="applyPattern()">✅ 确认</button>
+<button class="action-btn btn-red" onclick="clearPattern()">🗑️ 清空</button>
+</div>
+<div class="panel-title">🎯 填空板（点击空位填入字母）</div>
+<div class="fill-board" id="fillBoard"><div style="color:#666;font-size:14px">请先输入模式并确认...</div></div>
+<div id="fillKeyboardArea" class="hidden">
+<div class="hint-text" style="text-align:center">点击上方空位选中，再点击下方字母填入</div>
+<div class="letter-keyboard" id="fillKeyboard"></div>
+<div class="btn-group">
+<button class="action-btn btn-red" id="btnWrong" onclick="markWrong()" disabled>❌ 错误（此字母不在国家名中）</button>
+<button class="action-btn btn-blue" onclick="fillBackspace()">⌫ 退格</button>
+<button class="action-btn btn-purple" onclick="undoFill()">↩️ 撤销</button>
+<button class="action-btn btn-dark" onclick="resetFill()">🔄 重置</button>
+</div>
+<div style="font-size:11px;color:#888;text-align:center;margin-top:6px">💡 用法：点击已填字母选中 → 点"错误" → 该字母从整个国家名中排除</div>
+</div>
+</div>
+
+<div class="panel">
+<div class="panel-title">💡 添加提示（支持中英文）</div>
+<div class="hint-system">
+<div class="hint-row">
+<select class="hint-select" id="hintType" onchange="updateHintOptions()">
+<option value="">选择提示类型...</option>
+<option value="continent">🌏 大洲 / Continent</option>
+<option value="geo">🏝️ 地理类型 / Geography</option>
+<option value="words">📝 单词数量 / Word Count</option>
+<option value="first_letter">🔤 首字母 / First Letter</option>
+<option value="length">📏 名字长度 / Name Length</option>
+</select>
+<select class="hint-select" id="hintValue"><option value="">先选择类型...</option></select>
+<button class="action-btn btn-green" onclick="addHint()">➕ 添加</button>
+</div>
+<div class="hint-row">
+<input type="text" class="hint-custom-input" id="customHintInput" placeholder="自定义提示（如：has red flag / 人口过亿...）">
+<button class="action-btn btn-orange" onclick="addCustomHint()">➕ 自定义</button>
+</div>
+<div style="margin-top:8px"><span style="font-size:12px;color:#888">已添加提示：</span><div id="hintTags" style="margin-top:6px"></div></div>
+</div>
+</div>
+
+<div class="panel">
+<div class="panel-title">📊 实时分析</div>
+<div class="stats-grid">
+<div class="stat-card"><div class="stat-value" id="fillStatTotal">193</div><div class="stat-label">剩余可能</div></div>
+<div class="stat-card"><div class="stat-value" id="fillStatEliminated">0</div><div class="stat-label">已排除</div></div>
+<div class="stat-card"><div class="stat-value" id="fillStatFilled">0</div><div class="stat-label">已填字母</div></div>
+<div class="stat-card"><div class="stat-value" id="fillStatEmpty">0</div><div class="stat-label">剩余空位</div></div>
+<div class="stat-card"><div class="stat-value" id="fillStatHints">0</div><div class="stat-label">已加提示</div></div>
+</div>
+<div class="rec-card" id="fillRec">
+<div class="rec-title">🎯 下一步最优策略</div>
+<div class="rec-detail" id="fillRecDetail">输入模式后开始分析...</div>
+</div>
+<div class="panel-title">📋 剩余可能国家（点击复制）</div>
+<div class="country-list" id="fillCountryList"></div>
+</div>
+<div class="panel">
+<div class="panel-title">📈 每个空位的字母分布</div>
+<div id="slotAnalysis"></div>
+</div>
+</div>
+
+<div id="attackMode" class="hidden">
+<div class="panel">
+<div class="panel-title">🔤 字母盘 — 点击字母标记"有"或"无"</div>
+<div class="letter-board" id="letterBoard"></div>
+<div class="btn-group">
+<button class="action-btn btn-green" id="btnHas" onclick="markSelected('has')" disabled>✅ 有（存在）</button>
+<button class="action-btn btn-red" id="btnNo" onclick="markSelected('no')" disabled>❌ 无（不存在）</button>
+<button class="action-btn btn-blue" onclick="undoLast()">↩️ 撤销</button>
+<button class="action-btn btn-gold" onclick="resetAll()">🔄 重置</button>
+</div>
+<div style="font-size:12px;color:#888;text-align:center;margin-top:8px">
+💡 流程：点击字母选中 → 点"有/无" → 如果"有"，下方输入位置
+</div>
+</div>
+
+<div id="posInputSection" class="hidden pos-input-section">
+<div class="pos-input-title">📍 字母 <span id="posInputLetter" style="color:#ffd700;font-size:18px"></span> 存在！请输入位置</div>
+<div class="pos-hint-text">输入位置编号，用逗号分隔。例如：猜了A，知道在第3位 → 输入 "3"；知道在第1和第5位 → 输入 "1,5"</div>
+<div class="pos-input-row">
+<input type="text" class="pos-input-text" id="posInput" placeholder="如: 3 或 1,5" onkeydown="if(event.key==='Enter')confirmPosInput()">
+<button class="action-btn btn-green" onclick="confirmPosInput()">✅ 确认位置</button>
+<button class="action-btn btn-dark" onclick="skipPosInput()">跳过（仅知道有，不知位置）</button>
+</div>
+<div id="posPreview" class="pos-preview"></div>
+</div>
+
+<div class="panel">
+<div class="panel-title">📊 实时战况</div>
+<div class="stats-grid">
+<div class="stat-card"><div class="stat-value" id="statTotal">193</div><div class="stat-label">剩余可能</div></div>
+<div class="stat-card"><div class="stat-value" id="statEliminated">0</div><div class="stat-label">已排除</div></div>
+<div class="stat-card"><div class="stat-value" id="statHasLetters">-</div><div class="stat-label">确认有</div></div>
+<div class="stat-card"><div class="stat-value" id="statNoLetters">-</div><div class="stat-label">确认无</div></div>
+</div>
+<div class="rec-card">
+<div class="rec-title">🎯 下一步最优猜测</div>
+<div class="rec-detail" id="topRecDetail">点击上方字母盘开始游戏...</div>
+</div>
+<div class="panel-title">📋 剩余可能国家</div>
+<div class="country-list" id="countryList"></div>
+</div>
+<div class="panel">
+<div class="panel-title">📈 未测字母信息熵排名</div>
+<div class="letter-analysis" id="entropyRanking"></div>
+</div>
+</div>
+
+<div id="defenseMode" class="hidden">
+<div class="panel">
+<div class="panel-title">🏆 最难被猜中的国家 TOP 15</div>
+<div id="difficultyList"></div>
+</div>
+<div class="panel">
+<div class="panel-title">⚠️ 千万别选这些</div>
+<div id="easyList"></div>
+</div>
+<div class="panel">
+<div class="panel-title">🧮 难猜指数计算规则</div>
+<div style="font-size:13px;color:#aaa;line-height:1.8">
+<b style="color:#ffd700">难猜指数</b> = 稀有字母得分 + 字母多样性 × 5 + 长度奖励<br><br>
+• <b>稀有字母</b>：Q/X(10分) > J(9分) > Z(8分) > W(7分) > F(6分) > Y/K(5分) > V(4分)<br>
+• <b>字母多样性</b>：独特字母数 ÷ 总字母数<br>
+• <b>长度影响</b>：≤4字母(-8) 5-6字母(-4) 7-9字母(0) 10-12字母(+3) ≥13字母(+6)<br><br>
+💡 <b>黄金法则</b>：长名字 + 稀有字母 + 高多样性 = 最难猜！
+</div>
+</div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const countries=["Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cambodia","Cameroon","Canada","Cape Verde","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo","Costa Rica","Croatia","Cuba","Cyprus","Czech Republic","Democratic Republic of the Congo","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia","Fiji","Finland","France","Gabon","Gambia","Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana","Haiti","Honduras","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kiribati","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar","Namibia","Nauru","Nepal","Netherlands","New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway","Oman","Pakistan","Palau","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Rwanda","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States of America","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"];
+
+const cnMap={"Afghanistan":"阿富汗","Albania":"阿尔巴尼亚","Algeria":"阿尔及利亚","Andorra":"安道尔","Angola":"安哥拉","Antigua and Barbuda":"安提瓜和巴布达","Argentina":"阿根廷","Armenia":"亚美尼亚","Australia":"澳大利亚","Austria":"奥地利","Azerbaijan":"阿塞拜疆","Bahamas":"巴哈马","Bahrain":"巴林","Bangladesh":"孟加拉国","Barbados":"巴巴多斯","Belarus":"白俄罗斯","Belgium":"比利时","Belize":"伯利兹","Benin":"贝宁","Bhutan":"不丹","Bolivia":"玻利维亚","Bosnia and Herzegovina":"波斯尼亚和黑塞哥维那","Botswana":"博茨瓦纳","Brazil":"巴西","Brunei":"文莱","Bulgaria":"保加利亚","Burkina Faso":"布基纳法索","Burundi":"布隆迪","Cambodia":"柬埔寨","Cameroon":"喀麦隆","Canada":"加拿大","Cape Verde":"佛得角","Central African Republic":"中非共和国","Chad":"乍得","Chile":"智利","China":"中国","Colombia":"哥伦比亚","Comoros":"科摩罗","Congo":"刚果共和国","Costa Rica":"哥斯达黎加","Croatia":"克罗地亚","Cuba":"古巴","Cyprus":"塞浦路斯","Czech Republic":"捷克共和国","Democratic Republic of the Congo":"刚果民主共和国","Denmark":"丹麦","Djibouti":"吉布提","Dominica":"多米尼克","Dominican Republic":"多米尼加共和国","Ecuador":"厄瓜多尔","Egypt":"埃及","El Salvador":"萨尔瓦多","Equatorial Guinea":"赤道几内亚","Eritrea":"厄立特里亚","Estonia":"爱沙尼亚","Eswatini":"斯威士兰","Ethiopia":"埃塞俄比亚","Fiji":"斐济","Finland":"芬兰","France":"法国","Gabon":"加蓬","Gambia":"冈比亚","Georgia":"格鲁吉亚","Germany":"德国","Ghana":"加纳","Greece":"希腊","Grenada":"格林纳达","Guatemala":"危地马拉","Guinea":"几内亚","Guinea-Bissau":"几内亚比绍","Guyana":"圭亚那","Haiti":"海地","Honduras":"洪都拉斯","Hungary":"匈牙利","Iceland":"冰岛","India":"印度","Indonesia":"印度尼西亚","Iran":"伊朗","Iraq":"伊拉克","Ireland":"爱尔兰","Israel":"以色列","Italy":"意大利","Jamaica":"牙买加","Japan":"日本","Jordan":"约旦","Kazakhstan":"哈萨克斯坦","Kenya":"肯尼亚","Kiribati":"基里巴斯","Kuwait":"科威特","Kyrgyzstan":"吉尔吉斯斯坦","Laos":"老挝","Latvia":"拉脱维亚","Lebanon":"黎巴嫩","Lesotho":"莱索托","Liberia":"利比里亚","Libya":"利比亚","Liechtenstein":"列支敦士登","Lithuania":"立陶宛","Luxembourg":"卢森堡","Madagascar":"马达加斯加","Malawi":"马拉维","Malaysia":"马来西亚","Maldives":"马尔代夫","Mali":"马里","Malta":"马耳他","Marshall Islands":"马绍尔群岛","Mauritania":"毛里塔尼亚","Mauritius":"毛里求斯","Mexico":"墨西哥","Micronesia":"密克罗尼西亚","Moldova":"摩尔多瓦","Monaco":"摩纳哥","Mongolia":"蒙古","Montenegro":"黑山","Morocco":"摩洛哥","Mozambique":"莫桑比克","Myanmar":"缅甸","Namibia":"纳米比亚","Nauru":"瑙鲁","Nepal":"尼泊尔","Netherlands":"荷兰","New Zealand":"新西兰","Nicaragua":"尼加拉瓜","Niger":"尼日尔","Nigeria":"尼日利亚","North Korea":"朝鲜","North Macedonia":"北马其顿","Norway":"挪威","Oman":"阿曼","Pakistan":"巴基斯坦","Palau":"帕劳","Panama":"巴拿马","Papua New Guinea":"巴布亚新几内亚","Paraguay":"巴拉圭","Peru":"秘鲁","Philippines":"菲律宾","Poland":"波兰","Portugal":"葡萄牙","Qatar":"卡塔尔","Romania":"罗马尼亚","Russia":"俄罗斯","Rwanda":"卢旺达","Saint Kitts and Nevis":"圣基茨和尼维斯","Saint Lucia":"圣卢西亚","Saint Vincent and the Grenadines":"圣文森特和格林纳丁斯","Samoa":"萨摩亚","San Marino":"圣马力诺","Sao Tome and Principe":"圣多美和普林西比","Saudi Arabia":"沙特阿拉伯","Senegal":"塞内加尔","Serbia":"塞尔维亚","Seychelles":"塞舌尔","Sierra Leone":"塞拉利昂","Singapore":"新加坡","Slovakia":"斯洛伐克","Slovenia":"斯洛文尼亚","Solomon Islands":"所罗门群岛","Somalia":"索马里","South Africa":"南非","South Korea":"韩国","South Sudan":"南苏丹","Spain":"西班牙","Sri Lanka":"斯里兰卡","Sudan":"苏丹","Suriname":"苏里南","Sweden":"瑞典","Switzerland":"瑞士","Syria":"叙利亚","Tajikistan":"塔吉克斯坦","Tanzania":"坦桑尼亚","Thailand":"泰国","Timor-Leste":"东帝汶","Togo":"多哥","Tonga":"汤加","Trinidad and Tobago":"特立尼达和多巴哥","Tunisia":"突尼斯","Turkey":"土耳其","Turkmenistan":"土库曼斯坦","Tuvalu":"图瓦卢","Uganda":"乌干达","Ukraine":"乌克兰","United Arab Emirates":"阿拉伯联合酋长国","United Kingdom":"英国","United States of America":"美国","Uruguay":"乌拉圭","Uzbekistan":"乌兹别克斯坦","Vanuatu":"瓦努阿图","Vatican City":"梵蒂冈","Venezuela":"委内瑞拉","Vietnam":"越南","Yemen":"也门","Zambia":"赞比亚","Zimbabwe":"津巴布韦"};
+
+const continentMap={"Afghanistan":"asia","Armenia":"asia","Azerbaijan":"asia","Bahrain":"asia","Bangladesh":"asia","Bhutan":"asia","Brunei":"asia","Cambodia":"asia","China":"asia","Georgia":"asia","India":"asia","Indonesia":"asia","Iran":"asia","Iraq":"asia","Israel":"asia","Japan":"asia","Jordan":"asia","Kazakhstan":"asia","Kuwait":"asia","Kyrgyzstan":"asia","Laos":"asia","Lebanon":"asia","Malaysia":"asia","Maldives":"asia","Mongolia":"asia","Myanmar":"asia","Nepal":"asia","North Korea":"asia","Oman":"asia","Pakistan":"asia","Philippines":"asia","Qatar":"asia","Saudi Arabia":"asia","Singapore":"asia","South Korea":"asia","Sri Lanka":"asia","Syria":"asia","Tajikistan":"asia","Thailand":"asia","Timor-Leste":"asia","Turkey":"asia","Turkmenistan":"asia","United Arab Emirates":"asia","Uzbekistan":"asia","Vietnam":"asia","Yemen":"asia","Cyprus":"asia","Albania":"europe","Andorra":"europe","Austria":"europe","Belarus":"europe","Belgium":"europe","Bosnia and Herzegovina":"europe","Bulgaria":"europe","Croatia":"europe","Czech Republic":"europe","Denmark":"europe","Estonia":"europe","Finland":"europe","France":"europe","Germany":"europe","Greece":"europe","Hungary":"europe","Iceland":"europe","Ireland":"europe","Italy":"europe","Latvia":"europe","Liechtenstein":"europe","Lithuania":"europe","Luxembourg":"europe","Malta":"europe","Moldova":"europe","Monaco":"europe","Montenegro":"europe","Netherlands":"europe","North Macedonia":"europe","Norway":"europe","Poland":"europe","Portugal":"europe","Romania":"europe","Russia":"europe","San Marino":"europe","Serbia":"europe","Slovakia":"europe","Slovenia":"europe","Spain":"europe","Sweden":"europe","Switzerland":"europe","Ukraine":"europe","United Kingdom":"europe","Vatican City":"europe","Algeria":"africa","Angola":"africa","Benin":"africa","Botswana":"africa","Burkina Faso":"africa","Burundi":"africa","Cameroon":"africa","Cape Verde":"africa","Central African Republic":"africa","Chad":"africa","Comoros":"africa","Congo":"africa","Democratic Republic of the Congo":"africa","Djibouti":"africa","Egypt":"africa","Equatorial Guinea":"africa","Eritrea":"africa","Eswatini":"africa","Ethiopia":"africa","Gabon":"africa","Gambia":"africa","Ghana":"africa","Guinea":"africa","Guinea-Bissau":"africa","Kenya":"africa","Lesotho":"africa","Liberia":"africa","Libya":"africa","Madagascar":"africa","Malawi":"africa","Mali":"africa","Mauritania":"africa","Mauritius":"africa","Morocco":"africa","Mozambique":"africa","Namibia":"africa","Niger":"africa","Nigeria":"africa","Rwanda":"africa","Sao Tome and Principe":"africa","Senegal":"africa","Seychelles":"africa","Sierra Leone":"africa","Somalia":"africa","South Africa":"africa","South Sudan":"africa","Sudan":"africa","Tanzania":"africa","Togo":"africa","Tunisia":"africa","Uganda":"africa","Zambia":"africa","Zimbabwe":"africa","Antigua and Barbuda":"north_america","Bahamas":"north_america","Barbados":"north_america","Belize":"north_america","Canada":"north_america","Costa Rica":"north_america","Cuba":"north_america","Dominica":"north_america","Dominican Republic":"north_america","El Salvador":"north_america","Grenada":"north_america","Guatemala":"north_america","Haiti":"north_america","Honduras":"north_america","Jamaica":"north_america","Mexico":"north_america","Nicaragua":"north_america","Panama":"north_america","Saint Kitts and Nevis":"north_america","Saint Lucia":"north_america","Saint Vincent and the Grenadines":"north_america","Trinidad and Tobago":"north_america","United States of America":"north_america","Argentina":"south_america","Bolivia":"south_america","Brazil":"south_america","Chile":"south_america","Colombia":"south_america","Ecuador":"south_america","Guyana":"south_america","Paraguay":"south_america","Peru":"south_america","Suriname":"south_america","Uruguay":"south_america","Venezuela":"south_america","Australia":"oceania","Fiji":"oceania","Kiribati":"oceania","Marshall Islands":"oceania","Micronesia":"oceania","Nauru":"oceania","New Zealand":"oceania","Palau":"oceania","Papua New Guinea":"oceania","Samoa":"oceania","Solomon Islands":"oceania","Tonga":"oceania","Tuvalu":"oceania","Vanuatu":"oceania"};
+
+const geoMap={"Antigua and Barbuda":"island","Bahamas":"island","Bahrain":"island","Barbados":"island","Cape Verde":"island","Comoros":"island","Cuba":"island","Cyprus":"island","Dominica":"island","Dominican Republic":"island","Fiji":"island","Grenada":"island","Haiti":"island","Iceland":"island","Indonesia":"island","Ireland":"island","Jamaica":"island","Japan":"island","Kiribati":"island","Madagascar":"island","Maldives":"island","Malta":"island","Marshall Islands":"island","Mauritius":"island","Micronesia":"island","Nauru":"island","New Zealand":"island","Palau":"island","Papua New Guinea":"island","Philippines":"island","Saint Kitts and Nevis":"island","Saint Lucia":"island","Saint Vincent and the Grenadines":"island","Samoa":"island","Sao Tome and Principe":"island","Seychelles":"island","Singapore":"island","Solomon Islands":"island","Sri Lanka":"island","Tonga":"island","Trinidad and Tobago":"island","Tuvalu":"island","Vanuatu":"island","United Kingdom":"island","Afghanistan":"landlocked","Andorra":"landlocked","Armenia":"landlocked","Austria":"landlocked","Azerbaijan":"landlocked","Belarus":"landlocked","Bhutan":"landlocked","Bolivia":"landlocked","Botswana":"landlocked","Burkina Faso":"landlocked","Burundi":"landlocked","Central African Republic":"landlocked","Chad":"landlocked","Czech Republic":"landlocked","Eswatini":"landlocked","Ethiopia":"landlocked","Hungary":"landlocked","Kazakhstan":"landlocked","Kyrgyzstan":"landlocked","Laos":"landlocked","Lesotho":"landlocked","Liechtenstein":"landlocked","Luxembourg":"landlocked","Malawi":"landlocked","Mali":"landlocked","Moldova":"landlocked","Mongolia":"landlocked","Nepal":"landlocked","Niger":"landlocked","North Macedonia":"landlocked","Paraguay":"landlocked","Rwanda":"landlocked","San Marino":"landlocked","Serbia":"landlocked","Slovakia":"landlocked","South Sudan":"landlocked","Switzerland":"landlocked","Tajikistan":"landlocked","Turkmenistan":"landlocked","Uganda":"landlocked","Uzbekistan":"landlocked","Vatican City":"landlocked","Zambia":"landlocked","Zimbabwe":"landlocked"};
+
+function cleanName(n){return n.toLowerCase().replace(/[^a-z ]/g,'')}
+function cleanNoSpace(n){return n.toLowerCase().replace(/[^a-z]/g,'')}
+
+const countryData=countries.map(name=>{
+const c=cleanName(name),cns=cleanNoSpace(name);
+return{name,clean:c,cleanNoSpace:cns,letters:[...new Set(cns.split(''))].sort(),length:name.length,letterLength:cns.length,continent:continentMap[name]||'unknown',geo:geoMap[name]||'coastal',wordCount:name.split(' ').length,cn:cnMap[name]||name};
+});
+
+function entropy(p){if(p<=0||p>=1)return 0;return -(p*Math.log2(p)+(1-p)*Math.log2(1-p));}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+function switchMode(m){
+document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+const tabs=document.querySelectorAll('.mode-tab');
+if(m==='fill')tabs[0].classList.add('active');
+if(m==='attack')tabs[1].classList.add('active');
+if(m==='defense')tabs[2].classList.add('active');
+document.getElementById('fillMode').classList.toggle('hidden',m!=='fill');
+document.getElementById('attackMode').classList.toggle('hidden',m!=='attack');
+document.getElementById('defenseMode').classList.toggle('hidden',m!=='defense');
+}
+
+// ==================== 填空模式 ====================
+let pattern=[],fillState=[],slotExclusions=[],selectedSlot=-1,fillHistory=[],activeHints=[],globalExcludedLetters=new Set();
+
+const hintOptions={
+continent:[{value:'asia',label:'🌏 亚洲 Asia'},{value:'europe',label:'🌍 欧洲 Europe'},{value:'africa',label:'🌍 非洲 Africa'},{value:'north_america',label:'🌎 北美洲 N. America'},{value:'south_america',label:'🌎 南美洲 S. America'},{value:'oceania',label:'🌏 大洋洲 Oceania'}],
+geo:[{value:'island',label:'🏝️ 岛国 Island'},{value:'landlocked',label:'🚫 内陆国 Landlocked'},{value:'coastal',label:'🏖️ 沿海国 Coastal'}],
+words:[{value:'1',label:'1️⃣ 单字 Single'},{value:'2',label:'2️⃣ 双字 Double'},{value:'3+',label:'3️⃣ 三字及以上 3+'}],
+first_letter:'abcdefghijklmnopqrstuvwxyz'.split('').map(l=>({value:l,label:l.toUpperCase()})),
+length:[{value:'short',label:'📏 短名 Short (≤6)'},{value:'medium',label:'📏 中等 Medium (7-10)'},{value:'long',label:'📏 长名 Long (≥11)'}]
+};
+
+function updateHintOptions(){
+const type=document.getElementById('hintType').value,sel=document.getElementById('hintValue');
+sel.innerHTML='<option value="">选择具体值...</option>';
+if(!type||!hintOptions[type])return;
+hintOptions[type].forEach(o=>{const op=document.createElement('option');op.value=o.value;op.textContent=o.label;sel.appendChild(op);});
+}
+
+function addHint(){
+const type=document.getElementById('hintType').value,value=document.getElementById('hintValue').value;
+if(!type||!value){showToast('请选择提示类型和具体值');return;}
+const opt=hintOptions[type].find(o=>o.value===value);
+if(activeHints.some(h=>h.type===type&&h.value===value)){showToast('该提示已添加');return;}
+activeHints.push({type,value,label:opt?opt.label:value});
+document.getElementById('hintType').value='';document.getElementById('hintValue').innerHTML='<option value="">先选择类型...</option>';
+renderHints();updateFillAnalysis();
+}
+
+function addCustomHint(){
+const input=document.getElementById('customHintInput'),text=input.value.trim();
+if(!text){showToast('请输入提示内容');return;}
+activeHints.push({type:'custom',value:text,label:'💬 '+text});
+input.value='';renderHints();updateFillAnalysis();
+}
+
+function removeHint(i){activeHints.splice(i,1);renderHints();updateFillAnalysis();}
+
+function renderHints(){
+const c=document.getElementById('hintTags');c.innerHTML='';
+activeHints.forEach((h,i)=>{const t=document.createElement('span');t.className='hint-tag';t.innerHTML=h.label+' <span class="remove" onclick="removeHint('+i+')">×</span>';c.appendChild(t);});
+if(activeHints.length===0)c.innerHTML='<span style="color:#666;font-size:12px">暂无提示</span>';
+}
+
+function parsePatternInput(input){
+const r=[];let idx=0;
+for(let ch of input){
+if(ch==='_'||ch==='？'||ch==='?')r.push({type:'empty',value:null,index:idx++});
+else if(ch===' ')r.push({type:'space',value:' ',index:idx++});
+else if(/[a-zA-Z]/.test(ch))r.push({type:'letter',value:ch.toLowerCase(),index:idx++});
+}
+return r;
+}
+
+function applyPattern(){
+const input=document.getElementById('patternInput').value;
+if(!input.trim()){showToast('请输入模式！');return;}
+pattern=parsePatternInput(input);fillState=pattern.map(p=>p.type==='empty'?null:p.value);
+slotExclusions=pattern.map(()=>new Set());selectedSlot=-1;fillHistory=[];activeHints=[];globalExcludedLetters=new Set();
+renderHints();renderFillBoard();document.getElementById('fillKeyboardArea').classList.remove('hidden');
+renderFillKeyboard();updateFillAnalysis();
+}
+
+function clearPattern(){
+document.getElementById('patternInput').value='';pattern=[];fillState=[];slotExclusions=[];
+selectedSlot=-1;fillHistory=[];activeHints=[];globalExcludedLetters=new Set();
+renderHints();renderFillBoard();
+document.getElementById('fillKeyboardArea').classList.add('hidden');updateFillAnalysis();
+}
+
+function getRemainingByFill(){
+return countryData.filter(c=>{
+for(let ex of globalExcludedLetters){if(c.cleanNoSpace.includes(ex))return false;}
+const hasSpace=pattern.some(p=>p.type==='space');const target=hasSpace?c.clean:c.cleanNoSpace;
+if(target.length!==pattern.length)return false;
+for(let i=0;i<pattern.length;i++){
+const p=pattern[i],st=fillState[i];
+if(p.type==='space'){if(target[i]!==' ')return false;}
+else if(p.type==='letter'){if(target[i]!==p.value)return false;}
+else if(p.type==='empty'){
+if(st!==null&&target[i]!==st)return false;
+if(slotExclusions[i]&&slotExclusions[i].has(target[i]))return false;
+}
+}
+for(let h of activeHints){
+if(h.type==='continent'&&c.continent!==h.value)return false;
+if(h.type==='geo'&&c.geo!==h.value)return false;
+if(h.type==='words'){if(h.value==='1'&&c.wordCount!==1)return false;if(h.value==='2'&&c.wordCount!==2)return false;if(h.value==='3+'&&c.wordCount<3)return false;}
+if(h.type==='first_letter'&&c.cleanNoSpace[0]!==h.value)return false;
+if(h.type==='length'){if(h.value==='short'&&c.letterLength>6)return false;if(h.value==='medium'&&(c.letterLength<7||c.letterLength>10))return false;if(h.value==='long'&&c.letterLength<11)return false;}
+}
+return true;
+});
+}
+
+function renderFillBoard(){
+const b=document.getElementById('fillBoard');
+if(pattern.length===0){b.innerHTML='<div style="color:#666;font-size:14px">请先输入模式并确认...</div>';return;}
+b.innerHTML='';
+pattern.forEach((p,i)=>{
+const s=document.createElement('div');s.className='fill-slot';
+if(p.type==='space'){s.classList.add('space');s.textContent='';}
+else if(fillState[i]!==null){s.classList.add('filled');if(i===selectedSlot)s.classList.add('selected');s.textContent=fillState[i].toUpperCase();s.onclick=()=>selectFilledSlot(i);}
+else{s.classList.add('empty');s.textContent='_';if(i===selectedSlot)s.classList.add('recommended');s.onclick=()=>selectSlot(i);}
+if(slotExclusions[i]&&slotExclusions[i].size>0){const d=document.createElement('div');d.className='slot-excluded';d.textContent='≠'+[...slotExclusions[i]].sort().join('').toUpperCase();s.appendChild(d);}
+b.appendChild(s);
+});
+}
+
+function selectSlot(i){if(pattern[i].type!=='empty'||fillState[i]!==null)return;selectedSlot=i;document.getElementById('btnWrong').disabled=true;renderFillBoard();updateFillKeyboardHighlight();}
+function selectFilledSlot(i){if(fillState[i]===null)return;selectedSlot=i;document.getElementById('btnWrong').disabled=false;renderFillBoard();updateFillKeyboardHighlight();}
+
+function renderFillKeyboard(){
+const b=document.getElementById('fillKeyboard');b.innerHTML='';
+'abcdefghijklmnopqrstuvwxyz'.split('').forEach(l=>{
+const btn=document.createElement('button');btn.className='key-btn';btn.textContent=l.toUpperCase();btn.id='key-'+l;btn.onclick=()=>fillLetter(l);
+if(globalExcludedLetters.has(l))btn.classList.add('excluded-global');
+b.appendChild(btn);
+});
+}
+
+function updateFillKeyboardHighlight(){
+document.querySelectorAll('.key-btn').forEach(b=>b.classList.remove('highlight','excluded-pos'));
+if(selectedSlot<0||pattern[selectedSlot].type!=='empty')return;
+const remaining=getRemainingByFill(),slotLetters={};
+remaining.forEach(c=>{const hasSpace=pattern.some(p=>p.type==='space');const target=hasSpace?c.clean:c.cleanNoSpace;const ch=target[selectedSlot];if(ch&&ch!==' '&&!(slotExclusions[selectedSlot]&&slotExclusions[selectedSlot].has(ch))&&!(globalExcludedLetters.has(ch)))slotLetters[ch]=(slotLetters[ch]||0)+1;});
+const sorted=Object.entries(slotLetters).sort((a,b)=>b[1]-a[1]);
+if(slotExclusions[selectedSlot])slotExclusions[selectedSlot].forEach(l=>{const b=document.getElementById('key-'+l);if(b)b.classList.add('excluded-pos');});
+let h=0;for(let[l]of sorted){const b=document.getElementById('key-'+l);if(b)b.classList.add('highlight');h++;if(h>=3)break;}
+}
+
+function fillLetter(l){
+if(selectedSlot<0){showToast('请先点击一个空位！');return;}
+if(pattern[selectedSlot].type!=='empty'){showToast('该位置已固定！');return;}
+if(slotExclusions[selectedSlot]&&slotExclusions[selectedSlot].has(l)){showToast('该字母已被此位置排除！');return;}
+if(globalExcludedLetters.has(l)){showToast('该字母已被全局排除！');return;}
+fillHistory.push({slot:selectedSlot,prev:fillState[selectedSlot],prevExclusions:new Set(slotExclusions[selectedSlot]),prevGlobalExcluded:new Set(globalExcludedLetters)});
+fillState[selectedSlot]=l;selectedSlot=-1;document.getElementById('btnWrong').disabled=true;
+renderFillBoard();updateFillKeyboardHighlight();updateFillAnalysis();
+}
+
+// 修改：错误按钮排除的是整个国家名中不存在此字母
+function markWrong(){
+if(selectedSlot<0||fillState[selectedSlot]===null){
+showToast('请先点击一个已填字母选中它');return;
+}
+const letter=fillState[selectedSlot],slot=selectedSlot;
+fillHistory.push({slot:slot,prev:letter,prevExclusions:new Set(slotExclusions[slot]),prevGlobalExcluded:new Set(globalExcludedLetters)});
+globalExcludedLetters.add(letter);
+fillState[slot]=null;
+selectedSlot=slot;
+showToast('已排除字母 '+letter.toUpperCase()+'（国家名中不存在）');
+document.getElementById('btnWrong').disabled=true;
+renderFillBoard();renderFillKeyboard();updateFillKeyboardHighlight();updateFillAnalysis();
+}
+
+function fillBackspace(){
+if(selectedSlot>=0&&fillState[selectedSlot]!==null){
+fillHistory.push({slot:selectedSlot,prev:fillState[selectedSlot],prevExclusions:new Set(slotExclusions[selectedSlot]),prevGlobalExcluded:new Set(globalExcludedLetters)});
+fillState[selectedSlot]=null;renderFillBoard();updateFillKeyboardHighlight();updateFillAnalysis();
+}
+}
+
+function undoFill(){
+if(fillHistory.length===0)return;
+const last=fillHistory.pop();
+fillState[last.slot]=last.prev;
+if(last.prevExclusions)slotExclusions[last.slot]=new Set(last.prevExclusions);
+if(last.prevGlobalExcluded)globalExcludedLetters=new Set(last.prevGlobalExcluded);
+selectedSlot=-1;document.getElementById('btnWrong').disabled=true;
+renderFillBoard();renderFillKeyboard();updateFillKeyboardHighlight();updateFillAnalysis();
+}
+
+function resetFill(){
+fillState=pattern.map(p=>p.type==='empty'?null:p.value);
+slotExclusions=pattern.map(()=>new Set());selectedSlot=-1;fillHistory=[];activeHints=[];globalExcludedLetters=new Set();
+renderHints();document.getElementById('btnWrong').disabled=true;
+renderFillBoard();renderFillKeyboard();updateFillKeyboardHighlight();updateFillAnalysis();
+}
+
+function updateFillAnalysis(){
+const remaining=getRemainingByFill(),eliminated=countryData.length-remaining.length;
+const filled=fillState.filter(s=>s!==null&&s!==' ').length;
+const empty=fillState.filter((s,i)=>pattern[i]&&pattern[i].type==='empty'&&s===null).length;
+document.getElementById('fillStatTotal').textContent=remaining.length;
+document.getElementById('fillStatEliminated').textContent=eliminated;
+document.getElementById('fillStatFilled').textContent=filled;
+document.getElementById('fillStatEmpty').textContent=empty;
+document.getElementById('fillStatHints').textContent=activeHints.length;
+
+const listEl=document.getElementById('fillCountryList');listEl.innerHTML='';
+if(remaining.length===0){listEl.innerHTML='<div style="color:#ff6b6b;text-align:center">⚠️ 没有国家匹配当前条件</div>';}
+else if(remaining.length<=25){
+remaining.forEach(c=>{
+const t=document.createElement('span');t.className='country-tag'+(remaining.length<=3?' highlight':'');
+t.innerHTML=c.name+'<span class="cn">'+c.cn+'</span>';
+t.onclick=()=>navigator.clipboard.writeText(c.name).then(()=>showToast('已复制: '+c.name+' '+c.cn));
+listEl.appendChild(t);
+});
+}
+else{listEl.innerHTML='<div style="color:#888;text-align:center">还有 '+remaining.length+' 个国家，继续填写以缩小范围...</div>';}
+
+const recEl=document.getElementById('fillRecDetail');
+if(remaining.length<=1){recEl.innerHTML=remaining.length===1?'🎉 答案就是：<b style="color:#ffd700;font-size:20px">'+remaining[0].name+' '+remaining[0].cn+'</b>':'没有匹配的国家，请检查条件';}
+else if(empty===0){recEl.innerHTML='✅ 所有空位已处理！请从上方列表确认答案。';}
+else{
+let bestSlot=-1,bestLetter='',bestScore=-1,bestEntropy=0,bestCount=0;
+const slotRecs=[];
+pattern.forEach((p,i)=>{
+if(p.type!=='empty'||fillState[i]!==null)return;
+const letters={};
+remaining.forEach(c=>{const hasSpace=pattern.some(pp=>pp.type==='space');const target=hasSpace?c.clean:c.cleanNoSpace;const ch=target[i];if(ch&&ch!==' '&&!(slotExclusions[i]&&slotExclusions[i].has(ch))&&!(globalExcludedLetters.has(ch)))letters[ch]=(letters[ch]||0)+1;});
+const entries=Object.entries(letters).sort((a,b)=>b[1]-a[1]);
+if(entries.length===0)return;
+const topLetter=entries[0][0],topCount=entries[0][1],e=entropy(topCount/remaining.length);
+slotRecs.push({slot:i,letter:topLetter,count:topCount,total:remaining.length,entropy:e,all:entries});
+const score=(topCount/remaining.length)*0.6+e*0.4;
+if(score>bestScore){bestScore=score;bestSlot=i;bestLetter=topLetter;bestEntropy=e;bestCount=topCount;}
+});
+if(bestSlot>=0){
+const exText=slotExclusions[bestSlot]&&slotExclusions[bestSlot].size>0?'• 该位置已排除: '+[...slotExclusions[bestSlot]].sort().join('').toUpperCase():'';
+const globText=globalExcludedLetters.size>0?'• 全局已排除: '+[...globalExcludedLetters].sort().join('').toUpperCase():'';
+recEl.innerHTML='<div style="font-size:20px;font-weight:800;color:#ffd700;margin-bottom:6px">位置 '+(bestSlot+1)+' → 字母 "'+bestLetter.toUpperCase()+'"</div><div>• 该位置有 <b style="color:#00d26a">'+bestCount+'</b> / '+remaining.length+' 个国家是这个字母<br>• 信息熵: <b>'+bestEntropy.toFixed(3)+'</b><br>• 点击上方第 <b>'+(bestSlot+1)+'</b> 个空位，再按 <b>'+bestLetter.toUpperCase()+'</b> 填入<br>'+exText+'<br>'+globText+'</div>';
+}else{recEl.innerHTML='所有空位已填满或无法进一步分析';}
+renderSlotAnalysis(slotRecs);
+}
+}
+
+function renderSlotAnalysis(slotRecs){
+const c=document.getElementById('slotAnalysis');
+if(slotRecs.length===0){c.innerHTML='<div style="color:#666;text-align:center">没有可分析的空位</div>';return;}
+slotRecs.sort((a,b)=>b.entropy-a.entropy);c.innerHTML='';
+slotRecs.forEach(rec=>{
+const div=document.createElement('div');div.className='slot-analysis-card';
+const top3=rec.all.slice(0,3).map(([l,count])=>'<span class="slot-chip'+(count===rec.all[0][1]?'':' secondary')+'"><b>'+l.toUpperCase()+'</b> '+count+'次</span>').join('');
+div.innerHTML='<div class="slot-header"><span class="slot-title">位置 '+(rec.slot+1)+'</span><span class="slot-meta">熵 '+rec.entropy.toFixed(3)+' · '+rec.all.length+'种可能</span></div><div class="slot-chips">'+top3+'</div><div class="entropy-bar"><div class="entropy-fill" style="width:'+(rec.entropy*100)+'%"></div></div>';
+c.appendChild(div);
+});
+}
+
+// ==================== 字母猜测模式（v5 - 输入位置）====================
+const letterStatus={};'abcdefghijklmnopqrstuvwxyz'.split('').forEach(l=>letterStatus[l]='unknown');
+let selectedLetter=null,classicHistory=[];
+// 位置约束：letter -> {hasPositions: Set(有的位置), noPositions: Set(无的位置)}
+let posConstraints={};
+let pendingLetter=null;
+
+function getRemainingClassic(){
+return countryData.filter(c=>{
+for(let l in letterStatus){
+if(letterStatus[l]==='has'&&!c.cleanNoSpace.includes(l))return false;
+if(letterStatus[l]==='no'&&c.cleanNoSpace.includes(l))return false;
+}
+for(let l in posConstraints){
+const pc=posConstraints[l];
+if(pc.hasPositions){
+for(let pos of pc.hasPositions){
+if(c.cleanNoSpace[pos]!==l)return false;
+}
+}
+if(pc.noPositions){
+for(let pos of pc.noPositions){
+if(c.cleanNoSpace[pos]===l)return false;
+}
+}
+}
+return true;
+});
+}
+
+function calculateEntropyClassic(letter,remaining){
+const has=remaining.filter(c=>c.cleanNoSpace.includes(letter)).length;
+const total=remaining.length;
+if(total===0)return 0;
+return entropy(has/total);
+}
+
+function renderLetterBoard(){
+const b=document.getElementById('letterBoard');b.innerHTML='';
+'abcdefghijklmnopqrstuvwxyz'.split('').forEach(l=>{
+const btn=document.createElement('button');btn.className='letter-btn '+letterStatus[l];
+if(letterStatus[l]==='unknown'&&l===selectedLetter)btn.classList.add('recommended');
+btn.textContent=l.toUpperCase();btn.onclick=()=>selectLetterClassic(l);b.appendChild(btn);
+});
+}
+
+function selectLetterClassic(l){
+if(letterStatus[l]!=='unknown')return;
+selectedLetter=l;
+document.getElementById('btnHas').disabled=false;
+document.getElementById('btnNo').disabled=false;
+renderLetterBoard();
+}
+
+function markSelected(status){
+if(!selectedLetter)return;
+if(status==='has'){
+// 显示位置输入面板
+pendingLetter=selectedLetter;
+document.getElementById('posInputLetter').textContent=selectedLetter.toUpperCase();
+document.getElementById('posInputSection').classList.remove('hidden');
+document.getElementById('posInput').value='';
+document.getElementById('posPreview').innerHTML='';
+document.getElementById('btnHas').disabled=true;
+document.getElementById('btnNo').disabled=true;
+selectedLetter=null;
+renderLetterBoard();
+return;
+}
+// "无"直接排除
+classicHistory.push({letter:selectedLetter,prev:letterStatus[selectedLetter],prevPosConstraints:JSON.parse(JSON.stringify(posConstraints))});
+letterStatus[selectedLetter]='no';
+selectedLetter=null;
+document.getElementById('btnHas').disabled=true;
+document.getElementById('btnNo').disabled=true;
+renderLetterBoard();updateClassicAnalysis();
+}
+
+function confirmPosInput(){
+if(!pendingLetter)return;
+const input=document.getElementById('posInput').value.trim();
+const hasPositions=new Set();
+const noPositions=new Set();
+
+if(input){
+// 解析输入，如 "3" 或 "1,5" 或 "2,4,6"
+const parts=input.split(/[,，\s]+/).filter(x=>x.trim());
+for(let p of parts){
+const num=parseInt(p);
+if(!isNaN(num)&&num>0)hasPositions.add(num-1); // 转为0-based
+}
+}
+
+// 自动推断"无"的位置：基于剩余国家，该字母不可能出现的位置
+const remaining=getRemainingClassic();
+const possiblePositions=new Set();
+remaining.forEach(c=>{
+c.cleanNoSpace.split('').forEach((ch,idx)=>{if(ch===pendingLetter)possiblePositions.add(idx);});
+});
+// 对于hasPositions中没有的位置，如果所有剩余国家在该位置都不是此字母，则标记为no
+const maxLen=Math.max(...remaining.map(c=>c.letterLength));
+for(let i=0;i<maxLen;i++){
+if(!hasPositions.has(i)){
+// 检查是否有任何剩余国家在该位置有此字母
+const anyHas=remaining.some(c=>c.cleanNoSpace[i]===pendingLetter);
+if(!anyHas)noPositions.add(i);
+}
+}
+
+classicHistory.push({letter:pendingLetter,prev:letterStatus[pendingLetter],prevPosConstraints:JSON.parse(JSON.stringify(posConstraints))});
+letterStatus[pendingLetter]='has';
+if(!posConstraints[pendingLetter])posConstraints[pendingLetter]={hasPositions:new Set(),noPositions:new Set()};
+for(let p of hasPositions)posConstraints[pendingLetter].hasPositions.add(p);
+for(let p of noPositions)posConstraints[pendingLetter].noPositions.add(p);
+
+pendingLetter=null;
+document.getElementById('posInputSection').classList.add('hidden');
+renderLetterBoard();updateClassicAnalysis();
+}
+
+function skipPosInput(){
+if(!pendingLetter)return;
+// 仅标记"有"，不输入位置
+classicHistory.push({letter:pendingLetter,prev:letterStatus[pendingLetter],prevPosConstraints:JSON.parse(JSON.stringify(posConstraints))});
+letterStatus[pendingLetter]='has';
+pendingLetter=null;
+document.getElementById('posInputSection').classList.add('hidden');
+renderLetterBoard();updateClassicAnalysis();
+}
+
+// 实时预览输入的位置
+function updatePosPreview(){
+const input=document.getElementById('posInput').value.trim();
+const preview=document.getElementById('posPreview');
+if(!input){preview.innerHTML='';return;}
+const parts=input.split(/[,，\s]+/).filter(x=>x.trim());
+let html='';
+for(let p of parts){
+const num=parseInt(p);
+if(!isNaN(num)&&num>0)html+='<span class="pos-preview-tag">位置 '+num+'</span>';
+}
+preview.innerHTML=html;
+}
+
+document.getElementById('posInput').addEventListener('input',updatePosPreview);
+
+function undoLast(){
+if(classicHistory.length===0)return;
+const last=classicHistory.pop();
+letterStatus[last.letter]=last.prev;
+if(last.prevPosConstraints)posConstraints=JSON.parse(JSON.stringify(last.prevPosConstraints));
+else if(posConstraints[last.letter])delete posConstraints[last.letter];
+selectedLetter=null;pendingLetter=null;
+document.getElementById('btnHas').disabled=true;
+document.getElementById('btnNo').disabled=true;
+document.getElementById('posInputSection').classList.add('hidden');
+renderLetterBoard();updateClassicAnalysis();
+}
+
+function resetAll(){
+'abcdefghijklmnopqrstuvwxyz'.split('').forEach(l=>letterStatus[l]='unknown');
+selectedLetter=null;classicHistory=[];posConstraints={};pendingLetter=null;
+document.getElementById('btnHas').disabled=true;
+document.getElementById('btnNo').disabled=true;
+document.getElementById('posInputSection').classList.add('hidden');
+renderLetterBoard();updateClassicAnalysis();
+}
+
+function updateClassicAnalysis(){
+const remaining=getRemainingClassic(),eliminated=countryData.length-remaining.length;
+const hasLetters=Object.keys(letterStatus).filter(l=>letterStatus[l]==='has');
+const noLetters=Object.keys(letterStatus).filter(l=>letterStatus[l]==='no');
+document.getElementById('statTotal').textContent=remaining.length;
+document.getElementById('statEliminated').textContent=eliminated;
+document.getElementById('statHasLetters').textContent=hasLetters.length>0?hasLetters.join(', ').toUpperCase():'无';
+document.getElementById('statNoLetters').textContent=noLetters.length>0?noLetters.join(', ').toUpperCase():'无';
+
+const listEl=document.getElementById('countryList');listEl.innerHTML='';
+if(remaining.length===0){listEl.innerHTML='<div style="color:#ff6b6b;text-align:center">⚠️ 没有国家匹配</div>';}
+else if(remaining.length<=30){
+remaining.forEach(c=>{
+const t=document.createElement('span');t.className='country-tag'+(remaining.length<=5?' highlight':'');
+t.innerHTML=c.name+'<span class="cn">'+c.cn+'</span>';
+t.onclick=()=>navigator.clipboard.writeText(c.name).then(()=>showToast('已复制: '+c.name+' '+c.cn));
+listEl.appendChild(t);
+});
+}
+else{listEl.innerHTML='<div style="color:#888;text-align:center">还有 '+remaining.length+' 个国家，继续猜测...</div>';}
+
+const recEl=document.getElementById('topRecDetail');
+if(remaining.length<=1){recEl.innerHTML=remaining.length===1?'🎉 答案：<b style="color:#ffd700;font-size:20px">'+remaining[0].name+' '+remaining[0].cn+'</b>':'没有匹配';}
+else{
+const entropyData=[];
+'abcdefghijklmnopqrstuvwxyz'.split('').forEach(l=>{
+if(letterStatus[l]==='unknown'){
+const e=calculateEntropyClassic(l,remaining);
+const has=remaining.filter(c=>c.cleanNoSpace.includes(l)).length;
+entropyData.push({letter:l,entropy:e,has,total:remaining.length});
+}
+});
+entropyData.sort((a,b)=>b.entropy-a.entropy);
+if(entropyData.length>0){
+const top=entropyData[0],no=top.total-top.has;
+recEl.innerHTML='<div style="font-size:20px;font-weight:800;color:#ffd700;margin-bottom:6px">字母 "'+top.letter.toUpperCase()+'"</div><div>• 熵: <b>'+top.entropy.toFixed(3)+'</b> · 有'+top.has+' / 无'+no+'</div>';
+}
+const rankEl=document.getElementById('entropyRanking');rankEl.innerHTML='';
+entropyData.slice(0,15).forEach(item=>{
+const no=item.total-item.has;
+const row=document.createElement('div');row.className='letter-row';
+row.innerHTML='<span class="l">'+item.letter.toUpperCase()+'</span><span class="info">有'+item.has+' 无'+no+'</span><span class="score">'+item.entropy.toFixed(3)+'</span><div class="entropy-bar" style="width:50px"><div class="entropy-fill" style="width:'+(item.entropy*100)+'%"></div></div>';
+rankEl.appendChild(row);
+});
+}
+}
+
+// ==================== 防守模式 ====================
+const rareWeights={q:10,x:10,j:9,z:8,w:7,f:6,y:5,k:5,v:4};
+
+function calculateDifficulty(name,clean){
+let score=0,rareCount=0;
+const unique=[...new Set(clean.split(''))];
+for(let ch of clean){if(rareWeights[ch]){score+=rareWeights[ch];rareCount++;}}
+const diversity=unique.length/clean.length;
+// 长度修正：长名字更难猜，短名字更容易被猜出
+let lengthBonus=0;
+if(clean.length<=4)lengthBonus=-8;
+else if(clean.length<=6)lengthBonus=-4;
+else if(clean.length<=9)lengthBonus=0;
+else if(clean.length<=12)lengthBonus=3;
+else lengthBonus=6;
+return{name,clean,length:clean.length,rareCount,unique:unique.length,diversity:diversity.toFixed(2),score:(score+diversity*5+lengthBonus).toFixed(2),cn:cnMap[name]||name};
+}
+
+function renderDefense(){
+const diffs=countryData.map(c=>calculateDifficulty(c.name,c.cleanNoSpace));
+diffs.sort((a,b)=>parseFloat(b.score)-parseFloat(a.score));
+
+const hardList=document.getElementById('difficultyList');hardList.innerHTML='';
+diffs.slice(0,15).forEach((d,i)=>{
+const div=document.createElement('div');div.className='difficulty-card';
+const medals=['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟','•','•','•','•','•'];
+div.innerHTML='<div><span class="name">'+(medals[i]||'•')+' '+d.name+' <span style="color:#888;font-size:11px">'+d.cn+'</span></span></div><div class="meta">'+d.length+'字母 · '+d.rareCount+'稀有 · 指数'+d.score+'</div>';
+div.onclick=()=>navigator.clipboard.writeText(d.name).then(()=>showToast('已复制: '+d.name+' '+d.cn));
+hardList.appendChild(div);
+});
+
+const easyList=document.getElementById('easyList');easyList.innerHTML='';
+diffs.slice(-10).reverse().forEach(d=>{
+const div=document.createElement('div');div.className='difficulty-card';
+div.style.borderLeftColor='#ff6b6b';
+div.innerHTML='<div><span class="name">'+d.name+' <span style="color:#888;font-size:11px">'+d.cn+'</span></span></div><div class="meta">'+d.length+'字母 · 指数'+d.score+' · 极易被猜中</div>';
+easyList.appendChild(div);
+});
+}
+
+// ==================== 初始化 ====================
+renderLetterBoard();updateClassicAnalysis();renderDefense();
+</script>
+</body>
+</html>
