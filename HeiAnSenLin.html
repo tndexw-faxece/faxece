@@ -1,0 +1,3899 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>黑暗森林 · 星系博弈 v2.0</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#02020a;color:#c8d0e8;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;min-height:100vh;overflow-x:hidden}
+  .stars{position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at bottom,#0a0a2e 0%,#000 100%);z-index:-1}
+  .container{max-width:1400px;margin:0 auto;padding:16px}
+  header{text-align:center;padding:10px 0 14px;border-bottom:1px solid #1e293b;margin-bottom:14px}
+  h1{font-size:26px;background:linear-gradient(90deg,#60a5fa,#a78bfa,#f472b6);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px}
+  .subtitle{font-size:12px;color:#64748b;margin-top:4px}
+  .status-bar{display:flex;justify-content:center;gap:28px;margin-top:10px;flex-wrap:wrap}
+  .status-item{font-size:14px;display:flex;align-items:center;gap:6px}
+  .status-item .val{color:#fbbf24;font-weight:700;font-size:16px}
+  .main-grid{display:grid;grid-template-columns:270px 1fr 290px;gap:14px;margin-top:14px}
+  @media(max-width:1000px){.main-grid{grid-template-columns:1fr}}
+  .panel{background:rgba(12,18,36,.9);border:1px solid #1e293b;border-radius:12px;padding:14px;backdrop-filter:blur(4px)}
+  .panel-title{font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center}
+  .map-wrap{display:flex;flex-direction:column;align-items:center}
+  #galaxy-svg{width:100%;max-width:440px;height:auto;background:radial-gradient(circle at center,#0f172a 0%,transparent 70%);border-radius:12px}
+  .galaxy-node{cursor:pointer;transition:all .3s}
+  .galaxy-node circle{fill:#1e293b;stroke:#475569;stroke-width:2}
+  .galaxy-node.mine circle{fill:#1e3a5f;stroke:#60a5fa;stroke-width:3;filter:drop-shadow(0 0 10px rgba(96,165,250,.6))}
+  .galaxy-node.dead circle{fill:#2a0a0a;stroke:#7f1d1d;stroke-dasharray:4 2}
+  .galaxy-node.unknown circle{fill:#0f172a;stroke:#334155;opacity:.5}
+  .galaxy-node text{fill:#e2e8f0;font-size:14px;font-weight:600;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+  .conn-line{stroke:#334155;stroke-width:1.5;opacity:.6}
+  .legend{display:flex;gap:14px;margin-top:8px;font-size:11px;flex-wrap:wrap;justify-content:center}
+  .legend span{display:flex;align-items:center;gap:4px}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .dot.mine{background:#60a5fa}
+  .dot.known{background:#334155;border:1px solid #475569}
+  .dot.dead{background:#7f1d1d}
+  .dot.unknown{background:#0f172a;border:1px solid #1e293b}
+  .hand-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+  .card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:10px;cursor:pointer;transition:all .2s;position:relative;min-height:132px;display:flex;flex-direction:column}
+  .card:hover{transform:translateY(-3px);border-color:#64748b}
+  .card.selected{border-color:#60a5fa;box-shadow:0 0 0 2px rgba(96,165,250,.3),0 4px 20px rgba(96,165,250,.15)}
+  .card.disabled{opacity:.35;cursor:not-allowed;transform:none}
+  .card-broadcast{border-left:3px solid #a78bfa}
+  .card-attack{border-left:3px solid #f87171}
+  .card-defense{border-left:3px solid #34d399}
+  .card-building{border-left:3px solid #fbbf24}
+  .card-special{border-left:3px solid #f472b6}
+  .card-plan{border-left:3px solid #38bdf8}
+  .card-header{display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px}
+  .card-type-icon{font-size:14px}
+  .card-cost{background:#0f172a;padding:2px 6px;border-radius:4px;color:#fbbf24;font-weight:700}
+  .card-name{font-size:13px;font-weight:700;margin-bottom:4px;line-height:1.3}
+  .card-desc{font-size:11px;color:#94a3b8;line-height:1.4;flex:1}
+  .card-tag{font-size:10px;margin-top:4px;padding:2px 6px;border-radius:4px;display:inline-block;width:fit-content}
+  .tag-cooperate{background:rgba(52,211,153,.15);color:#34d399}
+  .tag-betray{background:rgba(248,113,113,.15);color:#f87171}
+  .action-box{background:#0b1220;border-radius:10px;padding:14px;margin-top:10px}
+  .action-title{font-size:14px;margin-bottom:10px;color:#e2e8f0}
+  .target-label{font-size:12px;color:#94a3b8;margin-bottom:8px}
+  .target-grid{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .target-btn{width:40px;height:40px;border-radius:50%;border:1px solid #475569;background:#1e293b;color:#e2e8f0;cursor:pointer;font-size:14px;font-weight:700;transition:all .2s}
+  .target-btn:hover{background:#334155}
+  .target-btn.selected{background:#2563eb;border-color:#60a5fa;box-shadow:0 0 10px rgba(37,99,235,.4)}
+  .target-btn.dead{opacity:.3;cursor:not-allowed;text-decoration:line-through}
+  .target-btn.unreachable{opacity:.3;cursor:not-allowed;border-color:#1e293b}
+  .player-target-btn{padding:8px 14px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;cursor:pointer;font-size:13px;transition:all .2s;margin-right:6px;margin-bottom:6px}
+  .player-target-btn:hover{background:#334155}
+  .player-target-btn.selected{background:#2563eb;border-color:#60a5fa}
+  .player-target-btn.dead{opacity:.3;cursor:not-allowed;text-decoration:line-through}
+  .btn{padding:8px 18px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;margin-right:8px;margin-bottom:6px}
+  .btn-primary{background:#2563eb;color:#fff}
+  .btn-primary:hover{background:#3b82f6}
+  .btn-primary:disabled{background:#334155;cursor:not-allowed}
+  .btn-danger{background:#7f1d1d;color:#fff}
+  .btn-danger:hover{background:#991b1b}
+  .btn-success{background:#059669;color:#fff}
+  .btn-success:hover{background:#10b981}
+  .btn-warning{background:#b45309;color:#fff}
+  .btn-ghost{background:transparent;border:1px solid #475569;color:#94a3b8}
+  .btn-ghost:hover{border-color:#94a3b8;color:#e2e8f0}
+  .btn-ghost:disabled{opacity:.3;cursor:not-allowed}
+  .btn-block{width:100%;margin:8px 0 0;padding:10px}
+  .hint-text{font-size:11px;color:#64748b;margin-top:6px}
+  .log-scroll{max-height:340px;overflow-y:auto;font-size:12px;line-height:1.6}
+  .log-entry{padding:5px 0;border-bottom:1px solid #1e293b;display:flex;gap:8px}
+  .log-round{color:#475569;font-size:10px;min-width:28px;flex-shrink:0}
+  .log-broadcast{color:#c4b5fd}
+  .log-attack{color:#fca5a5}
+  .log-defense{color:#6ee7b7}
+  .log-building{color:#fcd34d}
+  .log-system{color:#94a3b8}
+  .log-death{color:#f87171;font-weight:700}
+  .log-special{color:#f9a8d4}
+  .player-row{display:flex;align-items:center;gap:10px;padding:10px;background:#1e293b;border-radius:8px;margin-bottom:8px;font-size:12px;border:1px solid transparent}
+  .player-row.me{border-color:#60a5fa;background:#172554}
+  .player-row.dead{opacity:.5;background:#2a0a0a;filter:grayscale(.6)}
+  .player-galaxy{font-size:18px;min-width:36px;text-align:center}
+  .player-info{flex:1}
+  .player-name{font-weight:700;font-size:13px}
+  .player-energy{color:#fbbf24;font-weight:700}
+  .player-buildings{display:flex;gap:4px;flex-wrap:wrap}
+  .bld-tag{background:#451a03;color:#fbbf24;padding:2px 6px;border-radius:4px;font-size:10px}
+  .player-status{font-size:11px;color:#f87171;min-width:70px;text-align:right}
+  .threat-list{display:flex;flex-direction:column;gap:6px}
+  .threat-item{display:flex;justify-content:space-between;padding:8px;background:#1e293b;border-radius:6px;font-size:12px}
+  .threat-item.danger{background:#450a0a;border:1px solid #7f1d1d;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+  .empty-state{text-align:center;color:#475569;padding:16px;font-size:12px}
+  .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:200}
+  .modal-overlay.active{display:flex}
+  .modal-box{background:#0f172a;border:1px solid #334155;border-radius:16px;padding:28px;max-width:460px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  .modal-box h3{margin:0 0 12px;font-size:18px;color:#a78bfa}
+  .modal-box p{font-size:14px;color:#cbd5e1;margin-bottom:16px;line-height:1.6}
+  .modal-actions{display:flex;gap:12px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+  .result-text{font-size:16px;font-weight:700;margin:12px 0}
+  .result-win{color:#34d399}
+  .result-betray{color:#fbbf24}
+  .result-lose{color:#f87171}
+  .result-draw{color:#94a3b8}
+  .gameover-title{font-size:22px;color:#fbbf24;margin-bottom:8px}
+  .gameover-sub{color:#94a3b8;margin-bottom:20px}
+  .warning{color:#f87171;font-size:12px;margin-bottom:8px}
+  ::-webkit-scrollbar{width:6px}
+  ::-webkit-scrollbar-track{background:#0f172a}
+  ::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:#475569}
+  .setup-panel{max-width:500px;margin:60px auto;padding:30px;background:rgba(12,18,36,.95);border:1px solid #334155;border-radius:16px;text-align:center}
+  .setup-panel h2{margin-bottom:20px;color:#a78bfa}
+  .setup-row{margin:16px 0;display:flex;align-items:center;justify-content:center;gap:12px}
+  .setup-row label{font-size:14px;color:#94a3b8}
+  .setup-row input[type="range"]{width:200px}
+  .setup-row span{color:#fbbf24;font-weight:700;font-size:16px}
+  .setup-players{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px}
+  .setup-player-input{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:13px;width:120px}
+  .deck-anim-panel{text-align:center}
+  .deck-anim-box{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;min-height:120px}
+  .deck-stack{position:relative;width:60px;height:84px}
+  .deck-card-outline{position:absolute;width:52px;height:76px;border:2px dashed #334155;border-radius:8px;background:transparent;transition:all .3s}
+  .deck-card-outline:nth-child(1){top:0;left:0;transform:rotate(-4deg)}
+  .deck-card-outline:nth-child(2){top:2px;left:2px;transform:rotate(-2deg);opacity:.8}
+  .deck-card-outline:nth-child(3){top:4px;left:4px;transform:rotate(0deg);opacity:.6}
+  .deck-card-outline:nth-child(4){top:6px;left:6px;transform:rotate(2deg);opacity:.4}
+  .deck-card-outline:nth-child(5){top:8px;left:8px;transform:rotate(4deg);opacity:.2}
+  .deck-count{margin-top:12px;font-size:12px;color:#64748b;font-family:monospace}
+  @keyframes deckPulse{0%,100%{opacity:.6}50%{opacity:1}}
+  .deck-anim-box.dealing .deck-card-outline{animation:deckPulse .6s ease-in-out infinite}
+  .deck-anim-box.dealing .deck-card-outline:nth-child(1){animation-delay:0s}
+  .deck-anim-box.dealing .deck-card-outline:nth-child(2){animation-delay:.1s}
+  .deck-anim-box.dealing .deck-card-outline:nth-child(3){animation-delay:.2s}
+  .deck-anim-box.dealing .deck-card-outline:nth-child(4){animation-delay:.3s}
+  .deck-anim-box.dealing .deck-card-outline:nth-child(5){animation-delay:.4s}
+  /* 飞牌动画 */
+  .flying-card{position:fixed;width:52px;height:76px;border-radius:8px;background:linear-gradient(135deg,#1e293b,#334155);border:2px solid #475569;box-shadow:0 4px 20px rgba(0,0,0,.5);z-index:10000;transition:none;pointer-events:none;display:flex;align-items:center;justify-content:center;font-size:24px}
+  /* 六边形抽奖 */
+  .hex-spinner{position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center}
+  .hex-ring{position:relative;width:180px;height:180px;animation:hexSpin 2s linear infinite}
+  .hex-cell{position:absolute;width:36px;height:36px;border-radius:50%;background:#1e293b;border:2px solid #334155;color:#94a3b8;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .3s}
+  .hex-cell.active{background:#2563eb;border-color:#60a5fa;color:#fff;box-shadow:0 0 15px rgba(96,165,250,.5);transform:scale(1.3)}
+  .hex-cell.locked{background:#059669;border-color:#34d399;color:#fff;box-shadow:0 0 20px rgba(52,211,153,.6);transform:scale(1.4)}
+  .hex-center{position:absolute;width:50px;height:50px;border-radius:50%;background:#0f172a;border:3px solid #fbbf24;color:#fbbf24;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:10;box-shadow:0 0 20px rgba(251,191,36,.3)}
+  /* 转盘消失动画 */
+  @keyframes hexFadeOut{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(0.3)}}
+  .hex-spinner.fading{animation:hexFadeOut 0.4s ease-out forwards}
+  /* 面壁计划变广播牌动画 */
+  @keyframes planToBroadcast{0%{transform:rotateY(0deg) scale(1)}50%{transform:rotateY(90deg) scale(1.1)}100%{transform:rotateY(0deg) scale(1)}}
+  @keyframes hexSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+  @keyframes hexStop{0%{transform:rotate(var(--stop-angle))}100%{transform:rotate(var(--stop-angle))}}
+  .hex-spinner.stopping .hex-ring{animation:hexBounce 1s ease-out forwards}
+  @keyframes hexBounce{0%{transform:rotate(var(--angle))}100%{transform:rotate(var(--stop-angle))}}
+  /* 星系牌堆网格 */
+  .galaxy-deck-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px}
+  .galaxy-card{width:50px;height:70px;background:#0f172a;border:2px solid #334155;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all .3s;position:relative;overflow:hidden}
+  .galaxy-card.dead{background:#2a0a0a;border-color:#7f1d1d;opacity:.4;transform:scale(.9)}
+  .galaxy-card.dead .g-icon{filter:grayscale(1)}
+  .galaxy-card.mine{border-color:#60a5fa;box-shadow:0 0 15px rgba(96,165,250,.5);transform:scale(1.1);z-index:10;background:#1e3a5f}
+  .galaxy-card .g-num{font-size:16px;font-weight:700;color:#60a5fa}
+  .galaxy-card .g-icon{font-size:20px;margin-top:4px}
+  .galaxy-card .g-back{font-size:20px;color:#475569;font-weight:700}
+  /* 火箭飞行动画 */
+  .flying-rocket{position:fixed;width:24px;height:24px;font-size:20px;z-index:10000;pointer-events:none;transition:none}
+  @keyframes rocketFly{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.2)}100%{transform:rotate(360deg) scale(1)}}
+  /* 爆炸震动 */
+  @keyframes galaxyExplode{0%{transform:scale(1)}20%{transform:scale(1.3) rotate(-5deg)}40%{transform:scale(.8) rotate(5deg)}60%{transform:scale(1.1) rotate(-3deg)}80%{transform:scale(.9) rotate(2deg)}100%{transform:scale(1) rotate(0)}}
+  @keyframes screenShake{0%,100%{transform:translate(0,0)}10%{transform:translate(-5px,-3px)}20%{transform:translate(5px,3px)}30%{transform:translate(-3px,5px)}40%{transform:translate(3px,-5px)}50%{transform:translate(-5px,3px)}60%{transform:translate(5px,-3px)}70%{transform:translate(-3px,-5px)}80%{transform:translate(3px,5px)}90%{transform:translate(-5px,3px)}}
+  .galaxy-node.exploding circle{animation:galaxyExplode .8s ease-out}
+  body.shaking{animation:screenShake .6s ease-out}
+  /* 星系牌堆 */
+  /* removed */ .galaxy-deck-stack{position:relative;width:60px;height:84px}
+  /* removed */ .galaxy-card-back{position:absolute;width:52px;height:76px;border-radius:8px;background:linear-gradient(135deg,#1e1b4b,#312e81);border:2px solid #4338ca;box-shadow:0 2px 8px rgba(0,0,0,.4);transition:all .3s}
+  /* removed */ .galaxy-card-back::after{content:"🌌";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:20px;opacity:.6}
+  /* removed */ .galaxy-card-back:nth-child(1){top:0;left:0;transform:rotate(-3deg)}
+  /* removed */ .galaxy-card-back:nth-child(2){top:1px;left:1px;transform:rotate(-1.5deg);opacity:.85}
+  /* removed */ .galaxy-card-back:nth-child(3){top:2px;left:2px;transform:rotate(0deg);opacity:.7}
+  /* removed */ .galaxy-card-back:nth-child(4){top:3px;left:3px;transform:rotate(1.5deg);opacity:.55}
+  /* removed */ .galaxy-card-back:nth-child(5){top:4px;left:4px;transform:rotate(3deg);opacity:.4}
+  /* removed */ .galaxy-deck-stack.empty /* removed */ .galaxy-card-back{opacity:0;transform:translateY(-20px) scale(0.8)}
+  .deterrence-box{background:#1e293b;border:1px solid #fbbf24;border-radius:10px;padding:14px;margin:10px 0}
+  .deterrence-box .title{color:#fbbf24;font-weight:700;margin-bottom:8px}
+  .deterrence-box .desc{font-size:12px;color:#94a3b8;line-height:1.6}
+  .deterrence-actions{display:flex;gap:10px;justify-content:center;margin-top:10px}
+  #galaxy-lottery-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:500}
+  #galaxy-lottery-overlay.active{display:flex}
+
+  /* 打出飞牌到星图动画 */
+  .flying-play-card{
+    position:fixed;
+    width:60px;
+    height:84px;
+    border-radius:10px;
+    background:linear-gradient(135deg,#1e293b,#0f172a);
+    border:2px solid #475569;
+    box-shadow:0 4px 24px rgba(0,0,0,.6), 0 0 20px rgba(96,165,250,.3);
+    z-index:10000;
+    pointer-events:none;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    transition:none;
+    font-size:11px;
+    color:#e2e8f0;
+    overflow:hidden;
+  }
+  .flying-play-card .fpc-icon{
+    font-size:28px;
+    margin-bottom:4px;
+  }
+  .flying-play-card .fpc-name{
+    font-size:10px;
+    font-weight:700;
+    text-align:center;
+    padding:0 4px;
+    line-height:1.2;
+  }
+  .flying-play-card .fpc-glow{
+    position:absolute;
+    top:0;left:0;right:0;bottom:0;
+    border-radius:10px;
+    animation:fpcGlow 0.5s ease-in-out infinite alternate;
+    pointer-events:none;
+  }
+  @keyframes fpcGlow{
+    0%{box-shadow:inset 0 0 10px rgba(96,165,250,.2)}
+    100%{box-shadow:inset 0 0 20px rgba(96,165,250,.5)}
+  }
+  .flying-play-card.broadcast{border-color:#a78bfa;box-shadow:0 4px 24px rgba(0,0,0,.6), 0 0 20px rgba(167,139,250,.4)}
+  .flying-play-card.attack{border-color:#f87171;box-shadow:0 4px 24px rgba(0,0,0,.6), 0 0 20px rgba(248,113,113,.4)}
+  .flying-play-card.defense{border-color:#34d399;box-shadow:0 4px 24px rgba(0,0,0,.6), 0 0 20px rgba(52,211,153,.4)}
+  .flying-play-card.building{border-color:#fbbf24;box-shadow:0 4px 24px rgba(0,0,0,.6), 0 0 20px rgba(251,191,36,.4)}
+  .flying-play-card.special{border-color:#f472b6;box-shadow:0 4px 24px rgba(0,0,0,.6), 0 0 20px rgba(244,114,182,.4)}
+  .galaxy-node.curse circle{fill:#451a03;stroke:#fbbf24;stroke-width:3;filter:drop-shadow(0 0 12px rgba(251,191,36,.7));animation:cursePulse 1.5s ease-in-out infinite}
+  @keyframes cursePulse{0%,100%{opacity:1}50%{opacity:.6}}
+</style>
+<base target="_blank">
+<base target="_blank">
+<base target="_blank">
+
+<!-- 音效系统 -->
+<script>
+// Web Audio API 音效生成器
+const AudioSys = {
+  ctx: null,
+  init() {
+    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  },
+  // 播放打击发射音效（低频轰鸣）
+  playAttack() {
+    this.init();
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(80, t);
+    osc.frequency.exponentialRampToValueAtTime(30, t + 0.5);
+    gain.gain.setValueAtTime(0.3, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.6);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.6);
+  },
+  // 播放广播音效（高频脉冲）
+  playBroadcast() {
+    this.init();
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, t);
+    osc.frequency.exponentialRampToValueAtTime(1760, t + 0.1);
+    osc.frequency.exponentialRampToValueAtTime(440, t + 0.3);
+    gain.gain.setValueAtTime(0.2, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.4);
+  },
+  // 播放防御部署音效（金属撞击）
+  playDefense() {
+    this.init();
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(200, t);
+    osc.frequency.exponentialRampToValueAtTime(600, t + 0.1);
+    gain.gain.setValueAtTime(0.25, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.3);
+  },
+  // 播放建设音效（机械组装）
+  playBuilding() {
+    this.init();
+    const t = this.ctx.currentTime;
+    for(let i=0;i<3;i++){
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(300 + i*100, t + i*0.08);
+      gain.gain.setValueAtTime(0.15, t + i*0.08);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + i*0.08 + 0.15);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t + i*0.08);
+      osc.stop(t + i*0.08 + 0.15);
+    }
+  },
+  // 播放光速飞船音效（空间跳跃）
+  playShip() {
+    this.init();
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(200, t);
+    osc.frequency.exponentialRampToValueAtTime(2000, t + 0.4);
+    gain.gain.setValueAtTime(0.3, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.5);
+  },
+  // 播放死亡/毁灭音效（低沉爆炸）
+  playDeath() {
+    this.init();
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const noise = this.ctx.createBufferSource();
+    const noiseGain = this.ctx.createGain();
+    // 噪声缓冲
+    const buffer = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.5, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<data.length;i++) data[i] = Math.random() * 2 - 1;
+    noise.buffer = buffer;
+    noiseGain.gain.setValueAtTime(0.4, t);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+    noise.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+    noise.start(t);
+    // 低频振荡
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(60, t);
+    osc.frequency.exponentialRampToValueAtTime(20, t + 0.5);
+    gain.gain.setValueAtTime(0.5, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.6);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.6);
+  },
+  // 播放抽牌音效（纸张摩擦）
+  playDraw() {
+    this.init();
+    const t = this.ctx.currentTime;
+    const noise = this.ctx.createBufferSource();
+    const noiseGain = this.ctx.createGain();
+    const buffer = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.15, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<data.length;i++) data[i] = (Math.random() * 2 - 1) * 0.3;
+    noise.buffer = buffer;
+    noiseGain.gain.setValueAtTime(0.2, t);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+    noise.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+    noise.start(t);
+  },
+  // 播放回合开始音效
+  playTurnStart() {
+    this.init();
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(440, t);
+    osc.frequency.setValueAtTime(554, t + 0.1);
+    osc.frequency.setValueAtTime(659, t + 0.2);
+    gain.gain.setValueAtTime(0.2, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.4);
+  },
+  // 播放计划牌音效（神秘电子音）
+  playPlan() {
+    this.init();
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(523, t);
+    osc.frequency.exponentialRampToValueAtTime(1047, t + 0.15);
+    osc.frequency.exponentialRampToValueAtTime(523, t + 0.3);
+    gain.gain.setValueAtTime(0.2, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.35);
+  },
+  // 播放按钮点击音效
+  playClick() {
+    this.init();
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, t);
+    gain.gain.setValueAtTime(0.1, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.05);
+  }
+};
+</script>
+<base target="_blank">
+</head>
+<body>
+<div class="stars"></div>
+<div class="container" id="game-container" style="display:none">
+<header>
+  <h1>🌌 黑暗森林 · 星系博弈</h1>
+  <div class="subtitle">暴露坐标即是毁灭的开始 —— 三体宇宙黑暗森林法则   桌游原创作者@游戏设计师游哥</div>
+  <div class="subtitle"><a href="https://space.bilibili.com/365451020">原作者b站号</a></div>
+  <div class="status-bar">
+    <div class="status-item">🪐 你的星系: <span class="val" id="disp-galaxy">?</span></div>
+    <div class="status-item">⚡ 能量: <span class="val" id="disp-energy">2</span></div>
+    <div class="status-item">🔄 回合: <span class="val" id="disp-round">1</span></div>
+    <div class="status-item">👥 存活文明: <span class="val" id="disp-alive">4/4</span></div>
+    <div class="status-item">🃏 已出牌: <span class="val" id="disp-played">0/2</span></div>
+    <div class="status-item">👤 当前回合: <span class="val" id="disp-turn-player">你</span></div>
+    <div class="status-item" id="disp-curse" style="display:none;color:#fbbf24">🔮 咒语: --</div>
+    <div class="status-item"><button class="btn btn-ghost" onclick="backToSetup()" style="padding:4px 12px;font-size:12px">🔙 返回设置</button></div>
+  </div>
+</header>
+<div class="main-grid">
+  <div>
+    <div class="panel map-wrap">
+      <div class="panel-title">星系拓扑图</div>
+      <svg id="galaxy-svg" viewBox="0 0 500 500"><g id="connections"></g><g id="nodes"></g></svg>
+      <div class="legend">
+        <span><span class="dot mine"></span> 你的星系</span>
+        <span><span class="dot known"></span> 已知存活</span>
+        <span><span class="dot dead"></span> 已毁灭</span>
+        <span><span class="dot unknown"></span> 未知</span>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <div class="panel-title">📜 星系日志</div>
+      <div class="log-scroll" id="log-box"></div>
+    </div>
+    <div class="panel deck-anim-panel" style="margin-top:14px">
+      <div class="panel-title">🎴 主牌堆</div>
+      <div class="deck-anim-box" id="main-deck-anim">
+        <div class="deck-stack" id="main-deck-stack">
+          <div class="deck-card-outline"></div>
+          <div class="deck-card-outline"></div>
+          <div class="deck-card-outline"></div>
+          <div class="deck-card-outline"></div>
+          <div class="deck-card-outline"></div>
+        </div>
+        <div class="deck-count" id="main-deck-count">--</div>
+      </div>
+    </div>
+    <!-- 飞牌动画容器 -->
+    <div id="flying-card-container" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999"></div>
+  </div>
+  <div>
+    <div class="panel">
+      <div class="panel-title"><span>🎴 你的手牌</span><span id="hand-count">0/4</span></div>
+      <div class="hand-grid" id="hand-box"></div>
+      <div id="action-area" style="display:none">
+        <div class="action-box">
+          <div class="action-title" id="action-title">选择操作</div>
+          <div id="action-content"></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn btn-success btn-block" id="btn-endturn" onclick="endTurn()">结束回合</button>
+      </div>
+      <div id="deterrence-area" style="display:none;margin-top:10px"></div>
+      <div id="debug-panel" style="display:none;margin-top:14px">
+        <div class="panel" style="border-color:#7c3aed">
+          <div class="panel-title" style="color:#a78bfa">🐛 调试面板</div>
+          <div style="font-size:12px;color:#94a3b8;line-height:1.8">
+            <div style="margin-bottom:8px"><strong style="color:#fbbf24">你的状态:</strong></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+              <button class="btn btn-primary" onclick="debugAddEnergy(10)" style="padding:4px 10px;font-size:11px">+10能量</button>
+              <button class="btn btn-primary" onclick="debugAddEnergy(50)" style="padding:4px 10px;font-size:11px">+50能量</button>
+              <button class="btn btn-danger" onclick="debugSetEnergy(0)" style="padding:4px 10px;font-size:11px">能量归零</button>
+              <button class="btn btn-success" onclick="debugSetEnergy(99)" style="padding:4px 10px;font-size:11px">能量=99</button>
+            </div>
+            <div style="margin-bottom:8px"><strong style="color:#fbbf24">添加卡牌:</strong></div>
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px">📡 广播牌</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+              <button class="btn btn-ghost" onclick="debugAddCard('broadcast','恒星广播','合作')" style="padding:4px 10px;font-size:11px">恒星-合作</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('broadcast','恒星广播','伪装')" style="padding:4px 10px;font-size:11px">恒星-伪装</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('broadcast','宇宙广播','合作')" style="padding:4px 10px;font-size:11px">宇宙-合作</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('broadcast','宇宙广播','伪装')" style="padding:4px 10px;font-size:11px">宇宙-伪装</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('broadcast','超距广播','合作')" style="padding:4px 10px;font-size:11px">超距-合作</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('broadcast','超距广播','伪装')" style="padding:4px 10px;font-size:11px">超距-伪装</button>
+            </div>
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px">🚀 攻击牌</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+              <button class="btn btn-ghost" onclick="debugAddCard('attack','热核打击')" style="padding:4px 10px;font-size:11px">热核</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('attack','光粒打击')" style="padding:4px 10px;font-size:11px">光粒</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('attack','湮灭打击')" style="padding:4px 10px;font-size:11px">湮灭</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('attack','降维打击')" style="padding:4px 10px;font-size:11px">降维</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('attack','科技锁死')" style="padding:4px 10px;font-size:11px">科技锁死</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('attack','水滴探测器')" style="padding:4px 10px;font-size:11px">水滴</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('attack','咒语')" style="padding:4px 10px;font-size:11px">咒语</button>
+            </div>
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px">🛡️ 防御牌</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+              <button class="btn btn-ghost" onclick="debugAddCard('defense','量子幽灵')" style="padding:4px 10px;font-size:11px">量子幽灵</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('defense','掩体星环')" style="padding:4px 10px;font-size:11px">掩体星环</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('defense','监听基地')" style="padding:4px 10px;font-size:11px">监听基地</button>
+            </div>
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px">🏗️ 建设牌</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+              <button class="btn btn-ghost" onclick="debugAddCard('building','太阳能阵列')" style="padding:4px 10px;font-size:11px">太阳能</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('building','聚变反应堆')" style="padding:4px 10px;font-size:11px">聚变</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('building','反物质引擎')" style="padding:4px 10px;font-size:11px">反物质</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('building','戴森球')" style="padding:4px 10px;font-size:11px">戴森球</button>
+            </div>
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px">✨ 特殊牌</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+              <button class="btn btn-ghost" onclick="debugAddCard('special','光速飞船')" style="padding:4px 10px;font-size:11px">光速飞船</button>
+            </div>
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px">📋 计划牌</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+              <button class="btn btn-ghost" onclick="debugAddCard('plan','面壁计划')" style="padding:4px 10px;font-size:11px">面壁计划</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('plan','群星计划')" style="padding:4px 10px;font-size:11px">群星计划</button>
+              <button class="btn btn-ghost" onclick="debugAddCard('plan','阶梯计划')" style="padding:4px 10px;font-size:11px">阶梯计划</button>
+            </div>
+            <div style="margin-bottom:8px"><strong style="color:#fbbf24">操控AI:</strong></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+              <button class="btn btn-danger" onclick="debugKillAllAI()" style="padding:4px 10px;font-size:11px">消灭所有AI</button>
+              <button class="btn btn-warning" onclick="debugRevealAll()" style="padding:4px 10px;font-size:11px">揭示所有星系</button>
+              <button class="btn btn-warning" onclick="debugSkipRound()" style="padding:4px 10px;font-size:11px">跳过10回合</button>
+              <button class="btn btn-primary" id="btn-pause-ai" onclick="debugToggleAIPause()" style="padding:4px 10px;font-size:11px">⏸️ 暂停AI思考</button>
+            </div>
+            <div style="margin-bottom:8px"><strong style="color:#fbbf24">切换角色 (当前: <span id="debug-current-player">你</span>):</strong></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+              <button class="btn btn-primary" onclick="debugSwitchPlayer(0)" style="padding:4px 10px;font-size:11px">切换到你</button>
+              <button class="btn btn-ghost" onclick="debugSwitchPlayer(1)" style="padding:4px 10px;font-size:11px">切换到AI-1</button>
+              <button class="btn btn-ghost" onclick="debugSwitchPlayer(2)" style="padding:4px 10px;font-size:11px">切换到AI-2</button>
+              <button class="btn btn-ghost" onclick="debugSwitchPlayer(3)" style="padding:4px 10px;font-size:11px">切换到AI-3</button>
+              <button class="btn btn-ghost" onclick="debugSwitchPlayer(4)" style="padding:4px 10px;font-size:11px">切换到AI-4</button>
+              <button class="btn btn-ghost" onclick="debugSwitchPlayer(5)" style="padding:4px 10px;font-size:11px">切换到AI-5</button>
+              <button class="btn btn-ghost" onclick="debugSwitchPlayer(6)" style="padding:4px 10px;font-size:11px">切换到AI-6</button>
+              <button class="btn btn-ghost" onclick="debugSwitchPlayer(7)" style="padding:4px 10px;font-size:11px">切换到AI-7</button>
+              <button class="btn btn-ghost" onclick="debugSwitchPlayer(8)" style="padding:4px 10px;font-size:11px">切换到AI-8</button>
+            </div>
+            <div style="margin-bottom:8px"><strong style="color:#fbbf24">全局操作:</strong></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="debugShowState()" style="padding:4px 10px;font-size:11px">打印state到控制台</button>
+              <button class="btn btn-ghost" onclick="debugClearLog()" style="padding:4px 10px;font-size:11px">清空日志</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <div class="panel-title">📖 规则速查</div>
+      <div style="font-size:11px;color:#94a3b8;line-height:1.7">
+        <p>• 每回合能量+1，建设牌每回合开始时额外产能量</p>
+        <p>• 弃牌不返还能量</p>
+        <p>• 广播发到某星系时<strong style="color:#fbbf24">所有文明都能看到</strong>（发到哪个星系，但不知是合作还是伪装）</p>
+        <p>• <strong style="color:#fbbf24">广播无人回应时，发送者回收一半能量（向上取整）</strong></p>
+        <p>• <strong style="color:#fbbf24">目标星系上的文明必须回应</strong>；范围内其他文明可选择回应</p>
+        <p>• 回应后双方翻开牌，合作/伪装结果<strong style="color:#fbbf24">所有文明都知道</strong></p>
+        <p>• 广播牌：双方合作各+3；一方伪装则伪装方+5，合作方0；双方伪装无效果</p>
+        <p>• 攻击牌发射后1回合到达。热核可破掩体星环；光粒/湮灭/降维无视防御</p>
+        <p>• <strong style="color:#fbbf24">降维打击选择玩家（文明）而非星系，追踪其当前所在星系</strong></p>
+        <p>• 量子幽灵防≤3级；掩体星环防2级（但怕热核）；监听基地可免回应一次广播</p>
+        <p>• 太阳能阵列&戴森球依赖恒星，恒星被毁则失效</p>
+        <p>• 文明死亡后亮出星系编号与身份，手牌洗回牌堆</p>
+        <p>• 建设牌所有人都能在地图上看到，但不知道是谁的</p>
+        <p>• <strong style="color:#fbbf24">光速飞船：使用后弃掉所有能量和建设牌，此牌也弃掉，随机迁移星系</strong></p>
+        <p>• <strong style="color:#fbbf24">科技锁死：弃掉目标星系玩家手中所有建造牌，不影响生存</strong></p>
+        <p>• <strong style="color:#fbbf24">黑暗平衡：2人时一方被打击可宣告反击，前者可放弃打击形成威慑平衡，两人共胜</strong></p>
+        <p>• <strong style="color:#fbbf24">建造牌不显示建造者位置（隐藏星系信息）</strong></p>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="panel">
+      <div class="panel-title">👤 文明状态</div>
+      <div id="player-list"></div>
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <div class="panel-title">🚀 飞行中的打击</div>
+      <div class="threat-list" id="threat-list"></div>
+    </div>
+    <div class="panel deck-anim-panel" style="margin-top:14px">
+      <div class="panel-title">🌌 星系牌堆</div>
+      <div class="deck-anim-box" id="galaxy-deck-anim">
+        <!-- 9张星系卡牌网格 -->
+        <div class="galaxy-deck-grid" id="galaxy-deck-grid">
+          <div class="galaxy-card" data-g="1"><div class="g-num">1</div><div class="g-icon">🪐</div></div>
+          <div class="galaxy-card" data-g="2"><div class="g-num">2</div><div class="g-icon">🪐</div></div>
+          <div class="galaxy-card" data-g="3"><div class="g-num">3</div><div class="g-icon">🪐</div></div>
+          <div class="galaxy-card" data-g="4"><div class="g-num">4</div><div class="g-icon">🪐</div></div>
+          <div class="galaxy-card" data-g="5"><div class="g-num">5</div><div class="g-icon">🪐</div></div>
+          <div class="galaxy-card" data-g="6"><div class="g-num">6</div><div class="g-icon">🪐</div></div>
+          <div class="galaxy-card" data-g="7"><div class="g-num">7</div><div class="g-icon">🪐</div></div>
+          <div class="galaxy-card" data-g="8"><div class="g-num">8</div><div class="g-icon">🪐</div></div>
+          <div class="galaxy-card" data-g="9"><div class="g-num">9</div><div class="g-icon">🪐</div></div>
+        </div>
+        <!-- 六边形抽奖转盘 -->
+        
+        <div class="deck-count" id="galaxy-deck-count">9/9</div>
+      </div>
+    </div>
+        <div class="deck-count" id="galaxy-deck-count">9 张</div>
+      </div>
+    </div>
+    <!-- 星系抽奖动画覆盖层 -->
+    <div id="galaxy-lottery-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:500">
+      <div class="hex-spinner" id="hex-spinner-overlay">
+        <div class="hex-ring" id="hex-ring-overlay">
+          <div class="hex-cell" data-g="1">1</div>
+          <div class="hex-cell" data-g="2">2</div>
+          <div class="hex-cell" data-g="3">3</div>
+          <div class="hex-cell" data-g="4">4</div>
+          <div class="hex-cell" data-g="5">5</div>
+          <div class="hex-cell" data-g="6">6</div>
+          <div class="hex-cell" data-g="7">7</div>
+          <div class="hex-cell" data-g="8">8</div>
+          <div class="hex-cell" data-g="9">9</div>
+        </div>
+        <div class="hex-center" id="hex-center-overlay">?</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="container" id="setup-container">
+  <div class="setup-panel">
+    <h2>🌌 黑暗森林 · 星系博弈</h2>
+    <p style="color:#64748b;font-size:13px;margin-bottom:20px">选择参与博弈的文明数量 (3-9人)</p>
+    <div class="setup-row">
+      <label>文明数量:</label>
+      <input type="range" id="player-count" min="3" max="9" value="4" oninput="updateSetup()">
+      <span id="player-count-display">4</span>
+    </div>
+    <div class="setup-players" id="setup-players"></div>
+    <div class="setup-row" style="margin-top:12px">
+      <label>🐛 调试模式:</label>
+      <input type="checkbox" id="debug-mode" style="width:20px;height:20px;cursor:pointer">
+    </div>
+    <button class="btn btn-primary btn-block" style="margin-top:20px" onclick="startGame()">开始博弈</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-broadcast">
+  <div class="modal-box">
+    <h3>📡 收到广播</h3>
+    <p id="bc-content"></p>
+    <div id="bc-card-selection" style="margin:12px 0;text-align:left;display:none">
+      <p style="color:#94a3b8;font-size:12px;margin-bottom:8px">选择一张广播牌进行回应：</p>
+      <div id="bc-card-list" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-success" id="btn-respond-bc" onclick="showBroadcastCardSelection()">回应 (出一张广播牌)</button>
+      <button class="btn btn-ghost" id="btn-ignore-bc" onclick="respondBroadcast(false)">保持沉默</button>
+    </div>
+    <p class="hint-text" id="bc-hint"></p>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-result">
+  <div class="modal-box">
+    <h3>📡 广播结果</h3>
+    <p id="res-content"></p>
+    <div class="result-text" id="res-text"></div>
+    <button class="btn btn-primary" onclick="closeModal('modal-result')" style="margin-top:8px">确定</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-deterrence">
+  <div class="modal-box">
+    <h3>⚠️ 黑暗平衡 — 威慑宣告</h3>
+    <p id="deter-content"></p>
+    <div class="deterrence-box">
+      <div class="title">威慑规则</div>
+      <div class="desc">
+        场上仅剩2名玩家时，若一方被打击，后者可宣告反击。<br>
+        需要展示1张打击牌及足够能源，并指定一个星系。<br>
+        打击方可选择：<br>
+        ① 放弃打击 → 双方形成威慑平衡，共同获胜<br>
+        ② 继续打击 → 游戏继续，被打击方下回合必须按宣告实施反击
+      </div>
+    </div>
+    <div class="modal-actions" id="deter-actions"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-gameover">
+  <div class="modal-box">
+    <div class="gameover-title" id="go-title">游戏结束</div>
+    <div class="gameover-sub" id="go-sub"></div>
+    <button class="btn btn-primary btn-block" onclick="resetGame()">重新开始</button>
+  </div>
+</div>
+
+<script>
+
+// ========== 动态星图生成 ==========
+function generateGalaxyPositions(count) {
+  // 固定9个星系的位置（基于原始拓扑但更分散）
+  const fixedPositions = [
+    {x: 250, y: 60},   // 1 - 顶部中央
+    {x: 100, y: 170},  // 2 - 左上
+    {x: 400, y: 170},  // 3 - 右上
+    {x: 250, y: 200},  // 4 - 中上
+    {x: 250, y: 340},  // 5 - 中下
+    {x: 100, y: 310},  // 6 - 左中
+    {x: 400, y: 310},  // 7 - 右中
+    {x: 100, y: 440},  // 8 - 左下
+    {x: 400, y: 440},  // 9 - 右下
+  ];
+  return fixedPositions.slice(0, count);
+}
+
+function generateConnections(count, positions) {
+  // 固定连接方式：
+  // 1-2, 1-3, 1-4
+  // 2-4, 2-6
+  // 3-4, 3-7
+  // 4-5
+  // 5-6, 5-8, 5-7
+  // 6-8
+  // 7-9
+  // 8-9
+  const fixedConns = [
+    [1,2], [1,3], [1,4],
+    [2,4], [2,6],
+    [3,4], [3,7],
+    [4,5],
+    [5,6], [5,8], [5,7],
+    [6,8],
+    [7,9],
+    [8,9]
+  ];
+  // 只返回涉及count以内星系的连接
+  return fixedConns.filter(([a,b]) => a <= count && b <= count);
+}
+
+function buildAdjacency(count, connections) {
+  // 固定邻接表（基于原始拓扑）
+  const fixedAdj = {
+    1: [2,3,4],
+    2: [1,4,6],
+    3: [1,4,7],
+    4: [1,2,3,5],
+    5: [4,6,8,7],
+    6: [2,5,8],
+    7: [3,5,9],
+    8: [5,6,9],
+    9: [7,8]
+  };
+  const adj = {};
+  for (let i = 1; i <= count; i++) {
+    adj[i] = fixedAdj[i] ? fixedAdj[i].filter(n => n <= count) : [];
+  }
+  return adj;
+}
+
+let GALAXY_POS = [];
+let CONNECTIONS = [];
+let ADJ = {};
+let GALAXY_COUNT = 9;
+
+// ========== 牌组 ==========
+function createDeck(){
+  const d=[],add=(n,c)=>{for(let i=0;i<n;i++)d.push({...c,uid:Math.random().toString(36).slice(2)})};
+  add(4,{type:'broadcast',name:'恒星广播',cost:0,range:1,subtype:'合作',desc:'距离1。双方合作各+3能量'});
+  add(4,{type:'broadcast',name:'恒星广播',cost:0,range:1,subtype:'伪装',desc:'距离1。对方合作你+5能量'});
+  add(4,{type:'broadcast',name:'宇宙广播',cost:1,range:2,subtype:'合作',desc:'距离2。双方合作各+3能量'});
+  add(4,{type:'broadcast',name:'宇宙广播',cost:1,range:2,subtype:'伪装',desc:'距离2。对方合作你+5能量'});
+  add(4,{type:'broadcast',name:'超距广播',cost:2,range:999,subtype:'合作',desc:'无限距离。双方合作各+3能量'});
+  add(4,{type:'broadcast',name:'超距广播',cost:2,range:999,subtype:'伪装',desc:'无限距离。对方合作你+5能量'});
+  add(4,{type:'attack',name:'热核打击',cost:4,level:1,travel:1,desc:'等级1。可摧毁掩体星环',breaksMask:true});
+  add(4,{type:'attack',name:'光粒打击',cost:6,level:2,travel:1,desc:'等级2。无视防御，毁灭恒星'});
+  add(4,{type:'attack',name:'湮灭打击',cost:8,level:3,travel:1,desc:'等级3。无视防御，毁灭恒星及建造牌'});
+  add(4,{type:'attack',name:'降维打击',cost:10,level:99,travel:1,desc:'等级∞。彻底清除目标星系及其中所有文明'});
+  add(4,{type:'attack',name:'科技锁死',cost:4,level:0,travel:0,desc:'距离无限。弃掉目标星系玩家手中所有建造牌，不影响生存',targetGalaxy:true,techLock:true});
+  add(4,{type:'attack',name:'水滴探测器',cost:2,level:1,desc:'摧毁目标星系所有广播牌（包括以后获得的）'});
+  add(4,{type:'attack',name:'咒语',cost:5,level:0,desc:'公布一个星系坐标，若2回合内被打击则双方获益'});
+  add(4,{type:'defense',name:'量子幽灵',cost:8,maxLevel:3,desc:'可在等级3及以下打击中幸存'});
+  add(4,{type:'defense',name:'掩体星环',cost:6,maxLevel:2,desc:'可在等级2打击中幸存（热核可破）'});
+  add(4,{type:'defense',name:'监听基地',cost:2,desc:'下回合收到广播时可不作回应'});
+  add(4,{type:'building',name:'太阳能阵列',cost:2,gain:1,needStar:true,desc:'每回合+1能量，依赖恒星'});
+  add(4,{type:'building',name:'聚变反应堆',cost:3,gain:1,desc:'每回合+1能量'});
+  add(4,{type:'building',name:'反物质引擎',cost:6,gain:2,desc:'每回合+2能量'});
+  add(4,{type:'building',name:'戴森球',cost:6,gain:3,needStar:true,unique:true,desc:'每回合+3能量，依赖恒星，唯一'});
+  add(4,{type:'special',name:'光速飞船',cost:10,desc:'弃掉所有能量和建设牌，随机迁移星系，此牌也弃掉'});
+  add(4,{type:'plan',name:'面壁计划',cost:1,desc:'获得一张随机广播牌（恒星/宇宙/超距）'});
+  add(4,{type:'plan',name:'群星计划',cost:0,desc:'获得2能源，并随机移除一张广播牌'});
+  add(4,{type:'plan',name:'阶梯计划',cost:3,desc:'选择星系发送探测器，到达后若有文明则获得5能源'});
+  return d;
+}
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function getDistances(from){
+  const dist={},q=[{g:from,d:0}],vis=new Set([from]);
+  while(q.length){const{g,d}=q.shift();dist[g]=d;for(let nb of ADJ[g])if(!vis.has(nb)){vis.add(nb);q.push({g:nb,d:d+1})}}
+  return dist;
+}
+
+let state={};
+
+const AI_NAMES = ['智子文明','歌者文明','归零者文明','质子文明','水滴文明','二向箔文明','面壁者文明','破壁者文明','执剑人文明','三体文明','地球文明','舰队文明'];
+
+function updateSetup() {
+  const count = parseInt(document.getElementById('player-count').value);
+  document.getElementById('player-count-display').textContent = count;
+  const box = document.getElementById('setup-players');
+  box.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const inp = document.createElement('input');
+    inp.className = 'setup-player-input' + (i === 0 ? ' player-input-you' : '');
+    inp.placeholder = i === 0 ? '人类文明' : '文明 ' + (i+1);
+    inp.value = i === 0 ? '人类文明' : (AI_NAMES[i-1] || '文明' + (i+1));
+    inp.id = 'player-name-' + i;
+    if(i === 0){
+      inp.style.borderColor = '#34d399';
+      inp.style.boxShadow = '0 0 0 2px rgba(52,211,153,.3), 0 0 10px rgba(52,211,153,.2)';
+      inp.style.color = '#34d399';
+      inp.style.fontWeight = 'bold';
+    }
+    box.appendChild(inp);
+  }
+}
+
+function startGame() {
+  // 初始化音频上下文（需要用户交互后才能播放）
+  AudioSys.init();
+  const count = parseInt(document.getElementById('player-count').value);
+  const names = [];
+  for (let i = 0; i < count; i++) {
+    const val = document.getElementById('player-name-' + i)?.value || (i === 0 ? '你' : AI_NAMES[i-1]);
+    names.push(val || (i === 0 ? '你' : '文明' + (i+1)));
+  }
+  const debugMode = document.getElementById('debug-mode')?.checked || false;
+  document.getElementById('setup-container').style.display = 'none';
+  document.getElementById('game-container').style.display = 'block';
+  initGame(count, names, debugMode);
+}
+
+function initGame(playerCount, playerNames, debugMode){
+  GALAXY_COUNT = 9;
+  GALAXY_POS = generateGalaxyPositions(GALAXY_COUNT);
+  CONNECTIONS = generateConnections(GALAXY_COUNT, GALAXY_POS);
+  ADJ = buildAdjacency(GALAXY_COUNT, CONNECTIONS);
+
+  const deck=shuffle(createDeck());
+  const names = playerNames.slice(0, playerCount);
+
+  // 使用星系抽奖动画分配星系
+  const players=[];
+  const usedGalaxies=[];
+
+  function assignGalaxyWithAnim(idx, callback){
+    if(idx >= playerCount){
+      callback();
+      return;
+    }
+    // 只有人类玩家(idx=0)显示转盘动画，AI直接静默分配
+    if(idx === 0){
+      hexGalaxyLottery(usedGalaxies, (gal)=>{
+        usedGalaxies.push(gal);
+        players.push({id:idx,name:names[idx],galaxy:gal,energy:2,hand:[],buildings:[],defense:null,dead:false,ai:idx>0,listenBase:false,hasDyson:false});
+        // AI玩家直接分配，不显示转盘
+        for(let i = idx + 1; i < playerCount; i++){
+          const available = [];
+          for(let g = 1; g <= GALAXY_COUNT; g++){
+            if(!usedGalaxies.includes(g)) available.push(g);
+          }
+          const gal = available[Math.floor(Math.random() * available.length)];
+          usedGalaxies.push(gal);
+          players.push({id:i,name:names[i],galaxy:gal,energy:2,hand:[],buildings:[],defense:null,dead:false,ai:i>0,listenBase:false,hasDyson:false});
+        }
+        callback();
+      });
+    }
+  }
+
+  assignGalaxyWithAnim(0, ()=>{
+    // 首次发牌：不发打击牌和防御牌（监听基地除外）
+    // 暂存到临时数组，不直接加入手牌（人类玩家将通过动画一张张加入）
+    const tempHands = [];
+    for(let p of players){
+      const tempHand = [];
+      let dealt = 0;
+      let broadcastCount = 0;
+      let buildingCount = 0;
+      let retryDeck = [];
+      while(dealt < 4 && deck.length > 0){
+        const card = deck.pop();
+        const allowed = card.type === 'broadcast' || card.type === 'building' || card.type === 'special' || card.type === 'plan' ||
+                        (card.type === 'defense' && card.name === '监听基地');
+        if(!allowed){
+          retryDeck.push(card);
+          continue;
+        }
+        // 限制同类型牌最多3张
+        if(card.type === 'broadcast' && broadcastCount >= 3){
+          retryDeck.push(card);
+          continue;
+        }
+        if(card.type === 'building' && buildingCount >= 3){
+          retryDeck.push(card);
+          continue;
+        }
+        tempHand.push(card);
+        if(card.type === 'broadcast') broadcastCount++;
+        if(card.type === 'building') buildingCount++;
+        dealt++;
+      }
+      // 将未使用的牌放回牌堆
+      for(let c of retryDeck) deck.push(c);
+      if(dealt < 4){
+        const shuffled = shuffle(deck);
+        while(dealt < 4 && shuffled.length > 0){
+          const card = shuffled.pop();
+          // 再次检查限制
+          if(card.type === 'broadcast' && broadcastCount >= 3){
+            deck.push(card); continue;
+          }
+          if(card.type === 'building' && buildingCount >= 3){
+            deck.push(card); continue;
+          }
+          tempHand.push(card);
+          if(card.type === 'broadcast') broadcastCount++;
+          if(card.type === 'building') buildingCount++;
+          dealt++;
+        }
+      }
+      tempHands.push(tempHand);
+      // AI玩家直接加入手牌
+      if(p.id !== 0){
+        p.hand = [...tempHand];
+      }
+    }
+
+    // 人类玩家：通过飞牌动画一张张加入手牌
+    const me = players[0];
+    const myTempHand = tempHands[0];
+    let animIdx = 0;
+    function playInitDealAnim(){
+      if(animIdx < myTempHand.length){
+        const card = myTempHand[animIdx];
+        const icon = {broadcast:'📡',attack:'🚀',defense:'🛡️',building:'🏗️',special:'✨',plan:'📋'}[card.type] || '?';
+        animateMainDeck();
+        AudioSys.playDraw();flyCardToHand(card.type, icon, ()=>{
+          me.hand.push(card); // 动画完成后才加入手牌
+          renderHand(); // 立即渲染显示
+          updateDeckCounts();
+          animIdx++;
+          setTimeout(playInitDealAnim, 300);
+        });
+      }
+    }
+    // 延迟等待renderAll完成并确保DOM布局稳定
+    setTimeout(()=>{
+      playInitDealAnim();
+    }, 800);
+
+    const finalDeck = shuffle(deck);
+    state={
+      round:1,phase:'player',players,deck:finalDeck,myId:0,deadGalaxies:[],knownGalaxies:[players[0].galaxy],
+      incomingAttacks:[],selectedCard:null,targetGalaxy:null,targetPlayerId:null,
+      pendingBroadcasts:[],currentBroadcast:null,gameOver:false,logs:[],
+      deterrenceState:null,
+      curseState:null,
+      playerCount: playerCount,
+      galaxyCount: GALAXY_COUNT,
+      debugMode: debugMode || false,
+      cardsPlayedThisTurn: 0,
+      broadcastQueue: [], // 待处理的广播队列
+      broadcastHistory: [], // 广播历史记录，用于位置预测
+      currentTurnId: 0, // 当前回合玩家ID，0=玩家，1=AI-1，以此类推
+      aiPaused: false // AI暂停状态
+    };
+    log('system','黑暗森林法则生效。'+playerCount+'个文明隐匿于'+GALAXY_COUNT+'个星系之中。');
+    log('system',`你被分配到星系 ${players[0].galaxy}。初始能量: 2`);
+    updateDeckCounts();
+    renderAll();
+  });
+}
+
+function getReachable(range,from){
+  if(range===999)return Array.from({length:GALAXY_COUNT},(_,i)=>i+1).filter(g=>g!==from&&!state.deadGalaxies.includes(g));
+  const dist=getDistances(from);
+  return Object.keys(dist).map(Number).filter(g=>dist[g]<=range&&g!==from&&!state.deadGalaxies.includes(g));
+}
+
+function canPlay(card){
+  const me=state.players[state.myId];
+  if(me.energy<card.cost)return false;
+  if(card.type==='building'&&card.name==='戴森球'&&me.hasDyson)return false;
+  if(state.cardsPlayedThisTurn >= 2) return false; // 每回合最多2张牌
+  // 群星计划需要手中有广播牌才能使用
+  if(card.type==='plan'&&card.name==='群星计划'){
+    const bcCount = me.hand.filter(c=>c.type==='broadcast').length;
+    if(bcCount === 0) return false;
+  }
+  return true;
+}
+
+function spendEnergy(pid,amt){state.players[pid].energy=Math.max(0,state.players[pid].energy-amt);if(pid===state.myId)renderStatus()}
+function addEnergy(pid,amt){state.players[pid].energy+=amt;if(pid===state.myId)renderStatus()}
+
+function killPlayer(pid,reason,fromGal){
+  const p=state.players[pid];if(p.dead)return;
+
+  // 查找攻击者星系（用于火箭动画）
+  let attackerGal = fromGal;
+  if(!attackerGal){
+    // 尝试从 incomingAttacks 中找到攻击此玩家的攻击者
+    const atk = state.incomingAttacks.find(a=>{
+      if(a.targetPlayerId===pid)return true;
+      const targetP=state.players.find(tp=>tp.galaxy===a.targetGalaxy&&!tp.dead);
+      return targetP&&targetP.id===pid;
+    });
+    if(atk)attackerGal=atk.from;
+  }
+
+  const doKill = ()=>{
+    p.dead=true;state.deadGalaxies.push(p.galaxy);state.knownGalaxies.push(p.galaxy);
+    for(let c of p.hand)state.deck.push(c);state.deck=shuffle(state.deck);p.hand=[];
+    AudioSys.playDeath();log('death',`💀 星系${p.galaxy} (${p.name}) ${reason}`);renderAll();
+  };
+
+  // 如果有攻击者星系，播放火箭动画
+  if(attackerGal && attackerGal !== p.galaxy){
+    animateRocketAttack(attackerGal, p.galaxy, doKill);
+  }else{
+    doKill();
+  }
+}
+
+// ==================== 广播队列处理（下回合执行） ====================
+function processBroadcastQueue(){
+  if(state.broadcastQueue.length === 0) return;
+
+  const pending = state.broadcastQueue.filter(b => !b.processed && b.sendRound < state.round);
+  if(pending.length === 0) return;
+
+  log('system', `📡 处理 ${pending.length} 条待回应广播...`);
+
+  for(let broadcast of pending){
+    broadcast.processed = true;
+    const sender = state.players[broadcast.senderId];
+    const card = broadcast.card;
+    const targetGalaxy = broadcast.targetGalaxy;
+    const dist = getDistances(sender.galaxy);
+    const range = card.range === 999 ? 99 : card.range;
+
+    // 重新计算当前可回应的玩家（有些可能已死亡）
+    const inRange = state.players.filter(p => !p.dead && p.id !== broadcast.senderId && dist[p.galaxy] <= range);
+    const responders = [];
+    const targetPlayer = state.players.find(p => p.galaxy === targetGalaxy && !p.dead && p.id !== broadcast.senderId);
+
+    if(targetPlayer){
+      const canResp = targetPlayer.hand.some(c => c.type === 'broadcast' && c.cost <= targetPlayer.energy);
+      const forced = !targetPlayer.listenBase && canResp;
+      responders.push({pid: targetPlayer.id, forced: forced, isTarget: true});
+    }
+
+    for(let p of inRange){
+      if(p.id === broadcast.senderId) continue;
+      if(targetPlayer && p.id === targetPlayer.id) continue;
+      responders.push({pid: p.id, forced: false, isTarget: false});
+    }
+
+    processBroadcastResponses(broadcast.senderId, card, responders);
+  }
+}
+
+
+// ==================== 文明位置预测系统 ====================
+function predictPlayerLocation(pid){
+  const p = state.players[pid];
+  if(!p || p.dead) return [];
+
+  // 如果已经揭示位置，直接返回已知位置
+  if(state.knownGalaxies.includes(p.galaxy)){
+    return [p.galaxy];
+  }
+
+  // 收集该文明的所有广播历史
+  const history = state.broadcastHistory.filter(h => h.senderId === pid);
+  if(history.length === 0){
+    // 没有历史，返回所有未毁灭星系（完全未知）
+    return Array.from({length: GALAXY_COUNT}, (_, i) => i + 1).filter(g => !state.deadGalaxies.includes(g));
+  }
+
+  // 基于广播历史推断可能位置
+  let possibleGalaxies = new Set();
+
+  for(let h of history){
+    // 如果记录中有 fromGalaxy（发送时的位置），该位置一定是可能的
+    if(h.fromGalaxy){
+      possibleGalaxies.add(h.fromGalaxy);
+    }
+
+    // 基于广播类型和目标星系推断发送者位置
+    // 恒星广播(range=1): 发送者在目标星系的距离1范围内
+    // 宇宙广播(range=2): 发送者在目标星系的距离2范围内
+    // 超距广播(range=99): 无法通过目标推断位置
+    if(h.range < 99 && h.targetGalaxy){
+      const distMap = getDistances(h.targetGalaxy);
+      for(let g = 1; g <= GALAXY_COUNT; g++){
+        if(distMap[g] !== undefined && distMap[g] <= h.range && distMap[g] > 0){
+          possibleGalaxies.add(g);
+        }
+      }
+    }
+  }
+
+  // 排除已毁灭的星系和玩家自己的星系
+  const me = state.players[state.myId];
+  return Array.from(possibleGalaxies).filter(g => !state.deadGalaxies.includes(g) && g !== me.galaxy);
+}
+
+function highlightPredictedGalaxies(galaxies){
+  const nodes = document.querySelectorAll('.galaxy-node');
+  nodes.forEach(node => {
+    const text = node.querySelector('text');
+    if(!text) return;
+    const gnum = parseInt(text.textContent);
+    if(galaxies.includes(gnum)){
+      const circle = node.querySelector('circle');
+      if(circle){
+        circle.dataset.originalFill = circle.style.fill || '';
+        circle.dataset.originalStroke = circle.style.stroke || '';
+        circle.style.fill = '#064e3b';
+        circle.style.stroke = '#34d399';
+        circle.style.strokeWidth = '3';
+        circle.style.filter = 'drop-shadow(0 0 12px rgba(52,211,153,.7))';
+      }
+      node.classList.add('predicted');
+    }
+  });
+}
+
+function clearPredictedGalaxies(){
+  const nodes = document.querySelectorAll('.galaxy-node.predicted');
+  nodes.forEach(node => {
+    const circle = node.querySelector('circle');
+    if(circle){
+      circle.style.fill = circle.dataset.originalFill || '';
+      circle.style.stroke = circle.dataset.originalStroke || '';
+      circle.style.strokeWidth = '';
+      circle.style.filter = '';
+    }
+    node.classList.remove('predicted');
+  });
+  // 重新渲染地图确保状态正确
+  renderMap();
+}
+
+
+// ==================== 广播牌选择 ====================
+function showBroadcastCardSelection(){
+  const bc = state.currentBroadcast;
+  const me = state.players[state.myId];
+  const allCards = state.currentBroadcastAllCards || [];
+  const validCards = state.currentBroadcastValidCards || [];
+
+  if(allCards.length === 0){
+    log('broadcast', `📡 你想回应但无法出广播牌，广播消散。`);
+    closeModal('modal-broadcast');
+    processPlayerBroadcastQueue();
+    return;
+  }
+
+  const cardSelectionEl = document.getElementById('bc-card-selection');
+  const cardListEl = document.getElementById('bc-card-list');
+
+  if(cardSelectionEl) cardSelectionEl.style.display = 'block';
+
+  // 渲染所有广播牌，能量不足的点不了
+  let html = '';
+  allCards.forEach((card, idx) => {
+    const canUse = card.cost <= me.energy;
+    const icon = card.subtype === '合作' ? '🤝' : '🎭';
+    const tagClass = card.subtype === '合作' ? 'tag-cooperate' : 'tag-betray';
+    const rangeText = card.range === 999 ? '∞' : card.range;
+    const opacity = canUse ? '1' : '0.4';
+    const cursor = canUse ? 'pointer' : 'not-allowed';
+    const onclick = canUse ? `onclick="respondBroadcastWithCard(${idx})"` : '';
+    const energyWarn = !canUse ? `<span style="color:#f87171"> (能量不足!)</span>` : '';
+
+    html += `<button class="player-target-btn" ${onclick} style="min-width:120px;text-align:left;opacity:${opacity};cursor:${cursor}">
+      <div style="font-size:16px;margin-bottom:2px">${icon} ${card.name}</div>
+      <div style="font-size:11px;color:#94a3b8">${card.cost}⚡ | 距离${rangeText} | <span class="${tagClass}" style="padding:1px 4px;border-radius:3px;font-size:10px">${card.subtype}</span>${energyWarn}</div>
+    </button>`;
+  });
+
+  if(cardListEl) cardListEl.innerHTML = html;
+
+  // 隐藏原回应按钮，显示已选择提示
+  const respondBtn = document.getElementById('btn-respond-bc');
+  if(respondBtn){
+    if(validCards.length > 0){
+      respondBtn.textContent = '请选择上方一张可用的广播牌';
+    } else {
+      respondBtn.textContent = '能量不足，无法回应';
+    }
+    respondBtn.disabled = true;
+    respondBtn.style.opacity = '0.5';
+  }
+}
+
+function respondBroadcastWithCard(cardIdx){
+  const bc = state.currentBroadcast;
+  const me = state.players[state.myId];
+  const allCards = state.currentBroadcastAllCards || [];
+
+  if(cardIdx < 0 || cardIdx >= allCards.length){
+    processPlayerBroadcastQueue();
+    return;
+  }
+
+  const myBc = allCards[cardIdx];
+  // 再次检查能量是否足够（防止状态变化）
+  if(myBc.cost > me.energy){
+    log('broadcast', `📡 能量不足，无法使用 ${myBc.name} 回应！`);
+    return;
+  }
+
+  closeModal('modal-broadcast');
+
+  spendEnergy(state.myId, myBc.cost);
+  me.hand.splice(me.hand.indexOf(myBc), 1);
+  resolveBroadcast(bc.senderCard, bc.senderId, myBc, state.myId);
+
+  // 清理
+  state.currentBroadcastValidCards = null;
+  processPlayerBroadcastQueue();
+}
+
+// ==================== 广播系统 ====================
+function sendBroadcast(senderId, card, targetGalaxy) {
+  const sender = state.players[senderId];
+  const senderName = sender.name;
+  // 发送时不显示广播类型（恒星/宇宙/超距），只显示"广播"
+
+  // 记录广播到队列，当前回合只显示日志，不处理回应
+  AudioSys.playBroadcast();log('broadcast', `📡 ${senderName} 发送了广播 → 星系${targetGalaxy}`);
+
+  state.broadcastQueue.push({
+    senderId: senderId,
+    senderName: senderName,
+    card: card,
+    targetGalaxy: targetGalaxy,
+    sendRound: state.round,
+    processed: false
+  });
+
+  // 记录广播历史用于位置预测
+  const senderGalaxy = sender.galaxy;
+  const range = card.range === 999 ? 99 : card.range;
+  state.broadcastHistory.push({
+    senderId: senderId,
+    senderName: senderName,
+    fromGalaxy: senderGalaxy,
+    targetGalaxy: targetGalaxy,
+    range: range,
+    round: state.round
+  });
+
+  // 将广播牌放入牌堆（因为已经打出）
+  state.deck.push(card);
+  state.deck = shuffle(state.deck);
+}
+
+function processBroadcastResponses(senderId, senderCard, responders) {
+  const valid = [];
+  for (let r of responders) {
+    const p = state.players[r.pid];
+    const canResp = p.hand.some(c => c.type === 'broadcast' && c.cost <= p.energy);
+    if (r.forced && !canResp && !p.listenBase) {
+      const name = state.players[r.pid].name;
+      log('broadcast', `📡 ${name} 无法回应广播（能量不足或无牌）`);
+      continue;
+    }
+    if (!canResp) continue;
+    valid.push(r);
+  }
+
+  if (valid.length === 0) {
+    const refund = Math.ceil(senderCard.cost / 2);
+    if (refund > 0) {
+      addEnergy(senderId, refund);
+      log('broadcast', `📡 广播没有收到任何回应，${state.players[senderId].name} 回收 ${refund} 能量`);
+    } else {
+      log('broadcast', `📡 广播没有收到任何回应，牌返回牌堆`);
+    }
+    state.deck.push(senderCard); state.deck = shuffle(state.deck);
+    return;
+  }
+  const playerResponses = [];
+  for (let r of valid) {
+    if (r.pid === state.myId) {
+      playerResponses.push(r);
+    } else {
+      const p = state.players[r.pid];
+      if (r.forced) {
+        const resp = aiChooseBroadcast(p);
+        if (resp) {
+          spendEnergy(p.id, resp.cost);
+          p.hand.splice(p.hand.indexOf(resp), 1);
+          resolveBroadcast(senderCard, senderId, resp, p.id);
+        }
+      } else {
+        if (Math.random() < 0.6) {
+          const resp = aiChooseBroadcast(p);
+          if (resp) {
+            spendEnergy(p.id, resp.cost);
+            p.hand.splice(p.hand.indexOf(resp), 1);
+            resolveBroadcast(senderCard, senderId, resp, p.id);
+          }
+        } else {
+          // AI 选择不回应，不显示日志（保持沉默）
+        }
+      }
+    }
+  }
+
+  if (playerResponses.length > 0) {
+    state.pendingBroadcasts = playerResponses.map(r => ({
+      senderId, senderCard, responderId: r.pid, forced: r.forced, isTarget: r.isTarget
+    }));
+    processPlayerBroadcastQueue();
+  } else {
+    state.deck.push(senderCard); state.deck = shuffle(state.deck);
+  }
+}
+
+function processPlayerBroadcastQueue() {
+  if (state.pendingBroadcasts.length === 0) {
+    if (state.currentBroadcast) {
+      const bc = state.currentBroadcast;
+      state.deck.push(bc.senderCard); state.deck = shuffle(state.deck);
+      state.currentBroadcast = null;
+    }
+    if (state.phase === 'broadcast') {
+      finishRound();
+    }
+    return;
+  }
+
+  const bc = state.pendingBroadcasts.shift();
+  state.currentBroadcast = bc;
+  const sender = state.players[bc.senderId];
+  const me = state.players[state.myId];
+
+  // 计算所有广播牌（用于显示），以及能量够的（用于判断能否回应）
+  const allBroadcasts = me.hand.filter(c => c.type === 'broadcast');
+  const validBroadcasts = allBroadcasts.filter(c => c.cost <= me.energy);
+  const canResp = validBroadcasts.length > 0;
+
+  // 存储所有广播牌到state，供选择使用
+  state.currentBroadcastAllCards = allBroadcasts;
+  state.currentBroadcastValidCards = validBroadcasts;
+
+  const senderName = sender ? sender.name : '某文明';
+  const targetGal = bc.targetGalaxy || '未知';
+  let content = `<strong>${senderName}</strong> 向星系<strong style="color:#60a5fa">${targetGal}</strong>发送了广播！<br>`;
+  // 弹窗中不显示广播类型（恒星/宇宙/超距），只有回应后才揭晓
+  content += `广播类型: <span style="color:#64748b">???</span><br>`;
+  if (bc.isTarget) {
+    content += `<span style="color:#fbbf24">你所在的星系是广播目标，必须回应！</span>`;
+  } else {
+    content += `<span style="color:#94a3b8">你在广播范围内，可选择是否回应。</span>`;
+  }
+
+  document.getElementById('bc-content').innerHTML = content;
+
+  // 准备广播牌选择列表
+  const cardListEl = document.getElementById('bc-card-list');
+  const cardSelectionEl = document.getElementById('bc-card-selection');
+  const respondBtn = document.getElementById('btn-respond-bc');
+
+  if(cardListEl) cardListEl.innerHTML = '';
+  if(cardSelectionEl) cardSelectionEl.style.display = 'none';
+
+  if(canResp && respondBtn){
+    respondBtn.disabled = false;
+    respondBtn.style.opacity = '1';
+    respondBtn.textContent = '回应 (选择广播牌)';
+    respondBtn.onclick = () => showBroadcastCardSelection();
+  } else if(respondBtn){
+    respondBtn.disabled = true;
+    respondBtn.style.opacity = '0.3';
+    respondBtn.textContent = '无法回应（无广播牌或能量不足）';
+  }
+
+  const canIgnore = !bc.forced || !canResp || me.listenBase;
+  document.getElementById('bc-hint').textContent = bc.forced 
+    ? (me.listenBase ? '你有监听基地，可以免回应。' : '你必须回应！')
+    : '你可以选择回应或不回应。';
+
+  const ignoreBtn = document.getElementById('btn-ignore-bc');
+  ignoreBtn.disabled = !canIgnore;
+  ignoreBtn.style.opacity = canIgnore ? '1' : '0.3';
+  ignoreBtn.textContent = bc.forced ? '无法回应' : '保持沉默';
+
+  openModal('modal-broadcast');
+}
+
+function respondBroadcast(agree) {
+  closeModal('modal-broadcast');
+  const bc = state.currentBroadcast;
+  const me = state.players[state.myId];
+
+  if (!agree) {
+    const reason = bc.forced ? '（使用监听基地豁免）' : '';
+    log('broadcast', `📡 ${me.name} 选择不回应广播${reason}`);
+    state.currentBroadcastAllCards = null;
+    state.currentBroadcastValidCards = null;
+    processPlayerBroadcastQueue();
+    return;
+  }
+
+  // 点击"回应"按钮时，显示广播牌选择列表
+  showBroadcastCardSelection();
+}
+
+function resolveBroadcast(cardA, pidA, cardB, pidB) {
+  const pA = state.players[pidA];
+  const pB = state.players[pidB];
+  const coopA = cardA.subtype === '合作';
+  const coopB = cardB.subtype === '合作';
+  const nameA = pA.name + (pidA === state.myId ? '(你)' : '');
+  const nameB = pB.name + (pidB === state.myId ? '(你)' : '');
+  // 有回应时才显示广播类型（恒星/宇宙/超距）和合作/伪装
+  const typeA = cardA.name;
+  const typeB = cardB.name;
+  const subtypeA = cardA.subtype;
+  const subtypeB = cardB.subtype;
+  let text = '', resultClass = '';
+  if (coopA && coopB) {
+    addEnergy(pidA, 3); addEnergy(pidB, 3);
+    text = `双方合作！${nameA}(${typeA}/${subtypeA}) 与 ${nameB}(${typeB}/${subtypeB}) 各获得 3 能量`;
+    resultClass = 'result-win';
+  } else if (!coopA && coopB) {
+    addEnergy(pidA, 5);
+    text = `${nameA}(${typeA}/${subtypeA}) 伪装！${nameA} 获得 5 能量，${nameB}(${typeB}/${subtypeB}) 无收益`;
+    resultClass = 'result-betray';
+  } else if (coopA && !coopB) {
+    addEnergy(pidB, 5);
+    text = `${nameB}(${typeB}/${subtypeB}) 伪装！${nameB} 获得 5 能量，${nameA}(${typeA}/${subtypeA}) 无收益`;
+    resultClass = 'result-lose';
+  } else {
+    text = `双方都是伪装！${nameA}(${typeA}/${subtypeA}) 与 ${nameB}(${typeB}/${subtypeB}) 互相猜忌，无效果`;
+    resultClass = 'result-draw';
+  }
+  log('broadcast', `📡 ${text}`);
+  state.deck.push(cardA, cardB);
+  state.deck = shuffle(state.deck);
+  if (pidA === state.myId || pidB === state.myId) {
+    const myCard = pidA === state.myId ? cardA : cardB;
+    const theirCard = pidA === state.myId ? cardB : cardA;
+    showResult(myCard.name + '(' + myCard.subtype + ')', theirCard.name + '(' + theirCard.subtype + ')', text, resultClass);
+  }
+}
+
+function showResult(myName, theirName, text, cls) {
+  document.getElementById('res-content').innerHTML = `你的 <strong>${myName}</strong> vs 对方的 <strong>${theirName}</strong>`;
+  const rt = document.getElementById('res-text');
+  rt.textContent = text; rt.className = 'result-text ' + cls;
+  openModal('modal-result');
+}
+
+// ==================== 打击处理（含威慑平衡） ====================
+function processAttacks(){
+  // 先检查是否有到期的咒语
+  if(state.curseState && !state.curseState.resolved && state.round >= state.curseState.expireRound){
+    const cs = state.curseState;
+    log('system', `🔮 ${cs.senderName} 释放的咒语到期，星系${cs.targetGalaxy}无人打击，无收益`);
+    state.curseState = null;
+  }
+
+  const arriving=state.incomingAttacks.filter(a=>a.arriveRound<=state.round);
+  for(let atk of arriving){
+    let targetGalaxy=atk.targetGalaxy;
+    if(atk.targetPlayerId!==null&&atk.targetPlayerId!==undefined){
+      const targetP=state.players[atk.targetPlayerId];
+      if(targetP&&!targetP.dead){targetGalaxy=targetP.galaxy}
+      else{log('attack',`🚀 一发降维打击失去了目标，消散在虚空中`);continue}
+    }
+    const target=state.players.find(p=>p.galaxy===targetGalaxy&&!p.dead);
+    if(!target){if(atk.isDim)log('attack',`🚀 降维打击到达星系${targetGalaxy}，但那里已无任何文明`);continue}
+
+    // === 降维打击处理 - 清除目标星系中所有文明 ===
+    if(atk.level>=99){
+      // 找到目标星系中所有存活文明
+      const victims = state.players.filter(p => p.galaxy === targetGalaxy && !p.dead);
+      let anySurvived = false;
+      for(let victim of victims){
+        // 检查是否有光速飞船可逃逸
+        const shipCard = victim.hand.find(c=>c.type==='special'&&c.name==='光速飞船');
+        if(shipCard && victim.energy >= shipCard.cost){
+          log('special',`⚡ ${victim.name} 面临降维打击，自动启动光速飞船紧急逃逸！`);
+          // 移除指向该目标的打击
+          state.incomingAttacks = state.incomingAttacks.filter(a=>{
+            if(a===atk) return false;
+            if(a.targetGalaxy===victim.galaxy) return false;
+            if(a.targetPlayerId===victim.id) return false;
+            return true;
+          });
+          autoUseLightSpeedEscape(victim, shipCard);
+          anySurvived = true;
+        } else {
+          // 无法逃逸，被清除
+          killPlayer(victim.id, '被降维清除', atk.from);
+        }
+      }
+      if(victims.length === 0){
+        log('attack',`🚀 降维打击到达星系${targetGalaxy}，但那里已无任何文明`);
+      } else if(!anySurvived){
+        log('attack',`🚀 降维打击到达星系${targetGalaxy}，该星系被二维化！`);
+      }
+      continue; // 跳过普通打击处理
+    }
+
+    // 威慑平衡检查：仅剩2人时
+    const survivors = state.players.filter(p => !p.dead);
+    if (survivors.length === 2 && !atk.fromDeterrence && !atk.techLock) {
+      const attacker = state.players.find(p => p.id === atk.attackerId);
+      const defender = target;
+      if (attacker && defender && !attacker.dead && !defender.dead) {
+        if (defender.id === state.myId) {
+          triggerDeterrence(atk);
+          continue;
+        } else if (attacker.id === state.myId) {
+          const aiDeter = aiDeterrenceDecision(defender, attacker, atk);
+          if (aiDeter && aiDeter.abandoned) {
+            return;
+          }
+        }
+      }
+    }
+
+// 处理阶梯计划探测器到达
+    if(atk.isPlan && atk.planType==='阶梯计划'){
+      const target = state.players.find(p=>p.galaxy===atk.targetGalaxy&&!p.dead);
+      const sender = state.players.find(p=>p.id===atk.senderId);
+      if(target && sender){
+        addEnergy(sender.id,5);
+        // 发送者自己知道星系信息，但不知道具体是哪个文明
+        if(sender.id === state.myId){
+          log('system',`📋 你的阶梯计划探测器到达星系${atk.targetGalaxy}，发现了文明，获得5能源！`);
+        } else {
+          log('system',`📋 ${sender.name} 的阶梯计划探测器发现了文明，获得5能源！`);
+        }
+      }else if(sender){
+        if(sender.id === state.myId){
+          log('system',`📋 你的阶梯计划探测器到达星系${atk.targetGalaxy}，未发现文明`);
+        } else {
+          log('system',`📋 ${sender.name} 的阶梯计划探测器未发现文明`);
+        }
+      }
+      continue;
+    }
+
+let survived=false,defenseDestroyed=false;
+    if(atk.level>=99){}
+    else if(atk.breaksMask&&target.defense&&target.defense.name==='掩体星环'){
+      defenseDestroyed=true;survived=true;target.defense=null;
+      log('attack',`🚀 热核打击摧毁了星系${targetGalaxy}的掩体星环！`);
+    }else if(target.defense&&target.defense.name!=='监听基地'){
+      if(target.defense.maxLevel>=atk.level){
+        survived=true;
+        log('defense',`🛡️ 星系${targetGalaxy}的${target.defense.name}防御了等级${atk.level}打击！`);
+      }
+    }
+    if(!survived){
+      if(atk.level>=2){
+        const starBlds=target.buildings.filter(b=>['太阳能阵列','戴森球'].includes(b));
+        if(starBlds.length){
+          target.buildings=target.buildings.filter(b=>!['太阳能阵列','戴森球'].includes(b));
+          log('attack',`☀️ 星系${targetGalaxy}的恒星被毁灭，${starBlds.join('、')}失效！`);
+        }
+      }
+      if(atk.level>=3){
+        if(target.buildings.length){log('attack',`💥 湮灭打击摧毁了星系${targetGalaxy}的所有建造牌！`);target.buildings=[]}
+      }
+      let reason='被毁灭';
+      if(atk.level>=99)reason='被降维清除';
+      else if(atk.level>=3)reason='被湮灭打击摧毁';
+      else if(atk.level>=2)reason='被光粒打击毁灭';
+      else if(atk.breaksMask)reason='被热核打击击穿防御';
+
+      // 检查是否触发咒语
+      if(state.curseState && !state.curseState.resolved && state.curseState.targetGalaxy === targetGalaxy){
+        const cs = state.curseState;
+        const sender = state.players.find(p=>p.id===cs.senderId);
+        // 返还发送者能源
+        if(sender && !sender.dead){
+          addEnergy(sender.id, 5);
+          log('system', `🔮 咒语触发！${sender.name} 收回5能源`);
+        }
+        // 检查该星系是否有文明（target就是）
+        if(target && !target.dead){
+          // 有文明，双方各得3能源
+          if(sender && !sender.dead){
+            addEnergy(sender.id, 3);
+            log('system', `🔮 咒语生效！星系${targetGalaxy}有文明 ${target.name}，${sender.name} 额外获得3能源！`);
+          }
+          // 打击者也获得3能源（如果打击者还活着）
+          const attacker = state.players.find(p=>p.id===atk.attackerId);
+          if(attacker && !attacker.dead){
+            addEnergy(attacker.id, 3);
+            log('system', `🔮 ${attacker.name} 因打击被咒语的星系，获得3能源！`);
+          }
+        } else {
+          // 无文明，发送者额外获得5能源（已包含在返还中）
+          if(sender && !sender.dead){
+            addEnergy(sender.id, 5);
+            log('system', `🔮 咒语生效！星系${targetGalaxy}无文明，${sender.name} 获得5能源！`);
+          }
+        }
+        state.curseState.resolved = true;
+      }
+
+      killPlayer(target.id,reason,atk.from);
+    }
+    if(!defenseDestroyed)target.defense=null;
+  }
+  state.incomingAttacks=state.incomingAttacks.filter(a=>a.arriveRound>state.round);
+}
+
+// ==================== 威慑平衡系统 ====================
+function triggerDeterrence(atk) {
+  const attacker = state.players.find(p => p.id === atk.attackerId);
+  const defender = state.players.find(p => p.galaxy === atk.targetGalaxy && !p.dead);
+  if (!attacker || !defender) return;
+
+  state.pendingDeterrence = { atk, attacker, defender };
+
+  let content = `<strong>${attacker.name}</strong> 对你发动了 ${atk.level >= 99 ? '降维打击' : ('等级' + atk.level + '打击')}！<br>`;
+  content += `场上仅剩2名玩家，你可以选择宣告反击威慑。<br>`;
+  content += `需要展示1张打击牌及足够能源，并指定一个星系。`;
+
+  document.getElementById('deter-content').innerHTML = content;
+
+  const actions = document.getElementById('deter-actions');
+  actions.innerHTML = '';
+
+  const me = state.players[state.myId];
+  const validAttacks = me.hand.filter(c => c.type === 'attack' && c.cost <= me.energy && !c.techLock);
+
+  if (validAttacks.length > 0) {
+    const declareBtn = document.createElement('button');
+    declareBtn.className = 'btn btn-danger';
+    declareBtn.textContent = '宣告反击威慑';
+    declareBtn.onclick = () => showDeterrenceDeclare(atk, validAttacks);
+    actions.appendChild(declareBtn);
+  }
+
+  const passBtn = document.createElement('button');
+  passBtn.className = 'btn btn-ghost';
+  passBtn.textContent = '不宣告反击';
+  passBtn.onclick = () => {
+    closeModal('modal-deterrence');
+    delete state.pendingDeterrence;
+    resolveAttackDirectly(atk);
+  };
+  actions.appendChild(passBtn);
+
+  openModal('modal-deterrence');
+}
+
+function showDeterrenceDeclare(atk, validAttacks) {
+  const actions = document.getElementById('deter-actions');
+  const me = state.players[state.myId];
+
+  let html = '<div style="text-align:left;margin-top:10px">';
+  html += '<p style="color:#94a3b8;font-size:12px">选择要展示的打击牌：</p>';
+  html += '<div class="target-grid">';
+  validAttacks.forEach((card, idx) => {
+    html += `<button class="player-target-btn" onclick="selectDeterCard(${idx})">${card.name} (${card.cost}⚡)</button>`;
+  });
+  html += '</div>';
+  html += '<p style="color:#94a3b8;font-size:12px;margin-top:10px">选择反击目标星系：</p>';
+  html += '<div class="target-grid">';
+  for (let g = 1; g <= GALAXY_COUNT; g++) {
+    if (g !== me.galaxy && !state.deadGalaxies.includes(g)) {
+      html += `<button class="target-btn" onclick="selectDeterTarget(${g})">${g}</button>`;
+    }
+  }
+  html += '</div>';
+  html += '<div class="deterrence-actions"><button class="btn btn-danger" onclick="confirmDeterrence()">确认宣告</button><button class="btn btn-ghost" onclick="cancelDeterrence()">取消</button></div>';
+  html += '</div>';
+
+  actions.innerHTML = html;
+  state.deterSelecting = { atk, validAttacks, selectedCard: null, selectedTarget: null };
+}
+
+function selectDeterCard(idx) {
+  state.deterSelecting.selectedCard = idx;
+  const btns = document.querySelectorAll('#deter-actions .player-target-btn');
+  btns.forEach((b, i) => {
+    b.classList.toggle('selected', i === idx);
+  });
+}
+
+function selectDeterTarget(g) {
+  state.deterSelecting.selectedTarget = g;
+  const btns = document.querySelectorAll('#deter-actions .target-btn');
+  btns.forEach(b => {
+    b.classList.toggle('selected', parseInt(b.textContent) === g);
+  });
+}
+
+function confirmDeterrence() {
+  const ds = state.deterSelecting;
+  if (ds.selectedCard === null || ds.selectedTarget === null) return;
+
+  const me = state.players[state.myId];
+  const card = ds.validAttacks[ds.selectedCard];
+  const attacker = state.players.find(p => p.id === ds.atk.attackerId);
+
+  closeModal('modal-deterrence');
+
+  log('system', `⚖️ ${me.name} 对 ${attacker.name} 宣告反击威慑！展示 ${card.name}，目标星系 ${ds.selectedTarget}`);
+
+  if (attacker.ai) {
+    const aiAbandon = Math.random() < 0.5;
+    if (aiAbandon) {
+      log('system', `⚖️ ${attacker.name} 放弃打击，双方形成威慑平衡！`);
+      endGameDeterrence([me.id, attacker.id]);
+      return;
+    } else {
+      log('system', `⚖️ ${attacker.name} 选择继续打击！`);
+      resolveAttackDirectly(ds.atk);
+      state.deterrenceState = {
+        attackerId: attacker.id,
+        defenderId: me.id,
+        declaredCard: card,
+        declaredTarget: ds.selectedTarget,
+        attackerAbandoned: false
+      };
+      renderDeterrenceUI();
+    }
+  } else {
+    resolveAttackDirectly(ds.atk);
+  }
+
+  delete state.pendingDeterrence;
+  delete state.deterSelecting;
+}
+
+function cancelDeterrence() {
+  delete state.deterSelecting;
+  triggerDeterrence(state.pendingDeterrence.atk);
+}
+
+function resolveAttackDirectly(atk) {
+  let targetGalaxy = atk.targetGalaxy;
+  if (atk.targetPlayerId !== null && atk.targetPlayerId !== undefined) {
+    const targetP = state.players[atk.targetPlayerId];
+    if (targetP && !targetP.dead) { targetGalaxy = targetP.galaxy; }
+    else { log('attack', `🚀 一发降维打击失去了目标，消散在虚空中`); return; }
+  }
+  const target = state.players.find(p => p.galaxy === targetGalaxy && !p.dead);
+  if (!target) { if (atk.isDim) log('attack', `🚀 降维打击到达星系${targetGalaxy}，但那里已无任何文明`); return; }
+
+let survived = false, defenseDestroyed = false;
+  if (atk.level >= 99) {}
+  else if (atk.breaksMask && target.defense && target.defense.name === '掩体星环') {
+    defenseDestroyed = true; target.defense = null;
+    log('attack', `🚀 热核打击摧毁了星系${targetGalaxy}的掩体星环！`);
+  } else if (target.defense && target.defense.name !== '监听基地') {
+    if (target.defense.maxLevel >= atk.level) {
+      survived = true;
+      log('defense', `🛡️ 星系${targetGalaxy}的${target.defense.name}防御了等级${atk.level}打击！`);
+    }
+  }
+  if (!survived) {
+    if (atk.level >= 2) {
+      const starBlds = target.buildings.filter(b => ['太阳能阵列', '戴森球'].includes(b));
+      if (starBlds.length) {
+        target.buildings = target.buildings.filter(b => !['太阳能阵列', '戴森球'].includes(b));
+        log('attack', `☀️ 星系${targetGalaxy}的恒星被毁灭，${starBlds.join('、')}失效！`);
+      }
+    }
+    if (atk.level >= 3) {
+      if (target.buildings.length) { log('attack', `💥 湮灭打击摧毁了星系${targetGalaxy}的所有建造牌！`); target.buildings = []; }
+    }
+    let reason = '被毁灭';
+    if (atk.level >= 99) reason = '被降维清除';
+    else if (atk.level >= 3) reason = '被湮灭打击摧毁';
+    else if (atk.level >= 2) reason = '被光粒打击毁灭';
+    else if (atk.breaksMask) reason = '被热核打击击穿防御';
+    killPlayer(target.id, reason, atk.from);
+  }
+  if (!defenseDestroyed) target.defense = null;
+}
+
+function aiDeterrenceDecision(defender, attacker, atk) {
+  const validAttacks = defender.hand.filter(c => c.type === 'attack' && c.cost <= defender.energy && !c.techLock);
+  if (validAttacks.length === 0) return null;
+
+  if (Math.random() < 0.4) {
+    const card = validAttacks[Math.floor(Math.random() * validAttacks.length)];
+    const targets = Array.from({length: GALAXY_COUNT}, (_, i) => i + 1).filter(g => g !== defender.galaxy && !state.deadGalaxies.includes(g));
+    const targetGal = targets[Math.floor(Math.random() * targets.length)];
+
+    log('system', `⚖️ ${defender.name} 对 ${attacker.name} 宣告反击威慑！展示 ${card.name}，目标星系 ${targetGal}`);
+
+    if (!attacker.ai) {
+      state.pendingDeterrenceAI = { defender, attacker, card, targetGal, atk };
+      showPlayerDeterrenceChoice(defender, attacker, card, targetGal);
+      return { pending: true };
+    }
+
+    if (Math.random() < 0.5) {
+      log('system', `⚖️ ${attacker.name} 放弃打击，双方形成威慑平衡！`);
+      endGameDeterrence([defender.id, attacker.id]);
+      return { abandoned: true };
+    } else {
+      log('system', `⚖️ ${attacker.name} 选择继续打击！`);
+      resolveAttackDirectly(atk);
+      state.deterrenceState = {
+        attackerId: attacker.id,
+        defenderId: defender.id,
+        declaredCard: card,
+        declaredTarget: targetGal,
+        attackerAbandoned: false
+      };
+      return { abandoned: false };
+    }
+  }
+  return null;
+}
+
+// ==================== 咒语弹窗 ====================
+function showCurseModal(senderName, targetGalaxy){
+  // 创建临时弹窗显示给所有玩家
+  const modalHtml = `
+    <div id="curse-modal-temp" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:300">
+      <div style="background:#0f172a;border:2px solid #fbbf24;border-radius:16px;padding:28px;max-width:400px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6)">
+        <h3 style="margin:0 0 12px;font-size:20px;color:#fbbf24">🔮 咒语释放</h3>
+        <p style="font-size:14px;color:#cbd5e1;margin-bottom:16px;line-height:1.6">
+          <strong>${senderName}</strong> 公布了星系<strong style="color:#fbbf24;font-size:18px">${targetGalaxy}</strong>的坐标！<br><br>
+          2回合内打击该星系将触发咒语效果！
+        </p>
+        <button class="btn btn-primary" onclick="document.getElementById('curse-modal-temp').remove()" style="margin-top:8px">确定</button>
+      </div>
+    </div>
+  `;
+  const div = document.createElement('div');
+  div.innerHTML = modalHtml;
+  document.body.appendChild(div.firstElementChild);
+}
+
+function showPlayerDeterrenceChoice(defender, attacker, card, targetGal) {
+  let content = `<strong>${defender.name}</strong> 对你宣告了反击威慑！<br>`;
+  content += `展示牌: ${card.name}<br>`;
+  content += `反击目标: 星系${targetGal}<br><br>`;
+  content += `你可以选择放弃打击，双方形成威慑平衡共同获胜；或继续打击。`;
+
+  document.getElementById('deter-content').innerHTML = content;
+  const actions = document.getElementById('deter-actions');
+  actions.innerHTML = '';
+
+  const abandonBtn = document.createElement('button');
+  abandonBtn.className = 'btn btn-success';
+  abandonBtn.textContent = '放弃打击 (共同获胜)';
+  abandonBtn.onclick = () => {
+    closeModal('modal-deterrence');
+    log('system', `⚖️ ${attacker.name} 放弃打击，双方形成威慑平衡！`);
+    endGameDeterrence([defender.id, attacker.id]);
+  };
+  actions.appendChild(abandonBtn);
+
+  const continueBtn = document.createElement('button');
+  continueBtn.className = 'btn btn-danger';
+  continueBtn.textContent = '继续打击';
+  continueBtn.onclick = () => {
+    closeModal('modal-deterrence');
+    log('system', `⚖️ ${attacker.name} 选择继续打击！`);
+    const atk = state.pendingDeterrenceAI.atk;
+    resolveAttackDirectly(atk);
+    state.deterrenceState = {
+      attackerId: attacker.id,
+      defenderId: defender.id,
+      declaredCard: card,
+      declaredTarget: targetGal,
+      attackerAbandoned: false
+    };
+    delete state.pendingDeterrenceAI;
+    renderDeterrenceUI();
+  };
+  actions.appendChild(continueBtn);
+
+  openModal('modal-deterrence');
+}
+
+function renderDeterrenceUI() {
+  const area = document.getElementById('deterrence-area');
+  if (!state.deterrenceState) {
+    area.style.display = 'none';
+    return;
+  }
+  const ds = state.deterrenceState;
+  const me = state.players[state.myId];
+
+  if (ds.defenderId === me.id) {
+    area.style.display = 'block';
+    area.innerHTML = `
+      <div class="deterrence-box">
+        <div class="title">⚠️ 威慑约束</div>
+        <div class="desc">
+          你已对 ${state.players[ds.attackerId].name} 宣告反击威慑。<br>
+          你必须在本回合使用 ${ds.declaredCard.name} 打击星系 ${ds.declaredTarget}。<br>
+          若不执行，威慑失效。
+        </div>
+      </div>
+    `;
+  } else {
+    area.style.display = 'none';
+  }
+}
+
+function endGameDeterrence(winnerIds) {
+  state.gameOver = true;
+  const names = winnerIds.map(id => state.players[id].name).join(' 与 ');
+  document.getElementById('go-title').textContent = '⚖️ 黑暗平衡达成！';
+  document.getElementById('go-sub').innerHTML = `${names}<br>形成威慑平衡，共同获胜！`;
+  openModal('modal-gameover');
+}
+
+function buildingIncome(){
+  for(let p of state.players){
+    if(p.dead)continue;
+    let gain=1;
+    for(let bname of p.buildings){
+      const info={'太阳能阵列':{gain:1},'聚变反应堆':{gain:1},'反物质引擎':{gain:2},'戴森球':{gain:3}}[bname];
+      if(info)gain+=info.gain;
+    }
+    p.energy+=gain;
+  }
+}
+
+function drawToFour(p, onComplete){
+  // AI玩家直接抽牌，无动画
+  if(p.id !== state.myId){
+    let retryCount = 0;
+    const maxRetry = state.deck.length * 2; // 最多遍历牌堆两次
+    while(p.hand.length<4&&state.deck.length>0&&retryCount<maxRetry){
+      const card = state.deck.pop();
+      // 如果该星系被水滴探测器封锁，广播牌被摧毁
+      if(p.waterDropBlocked && card.type === 'broadcast'){
+        state.deck.unshift(card); // 放到牌堆底部，避免无限循环
+        retryCount++;
+        continue; // 跳过这张牌，不加入手牌
+      }
+      p.hand.push(card);
+    }
+    if(onComplete) onComplete();
+    return;
+  }
+
+  // 人类玩家：一张一张抽，每张都有飞牌动画
+  function drawOne(){
+    if(p.hand.length<4&&state.deck.length>0){
+      const card = state.deck.pop(); // 先弹出，暂不加入手牌
+      animateMainDeck();
+      updateDeckCounts();
+      const icon = {broadcast:'📡',attack:'🚀',defense:'🛡️',building:'🏗️',special:'✨',plan:'📋'}[card.type] || '?';
+      AudioSys.playDraw();flyCardToHand(card.type, icon, ()=>{
+        p.hand.push(card); // 动画完成后才加入手牌
+        renderHand(); // 立即渲染，让玩家看到新牌
+        updateDeckCounts();
+        setTimeout(drawOne, 300); // 稍微延迟再抽下一张
+      });
+    } else {
+      if(onComplete) onComplete();
+    }
+  }
+  drawOne();
+}
+
+function finishRound(){
+  state.round++;
+  AudioSys.playTurnStart();
+  processAttacks();
+  processBroadcastQueue(); // 处理上回合的广播回应
+  buildingIncome();
+  for(let p of state.players){p.listenBase=false;if(!p.dead)drawToFour(p)}
+  state.phase='player';
+  state.selectedCard=null;
+  state.targetGalaxy=null;
+  state.targetPlayerId=null;
+  state.cardsPlayedThisTurn = 0; // 重置出牌计数
+  state.currentTurnId = 0; // 重置为玩家回合
+  renderAll();
+  checkGameOver();
+}
+
+function endTurn(){
+  if(state.gameOver||state.phase!=='player')return;
+
+  if (state.deterrenceState && state.deterrenceState.defenderId === state.myId) {
+    const ds = state.deterrenceState;
+    const me = state.players[state.myId];
+    const executed = state.incomingAttacks.some(a => 
+      a.attackerId === me.id && 
+      a.targetGalaxy === ds.declaredTarget &&
+      a.level === ds.declaredCard.level
+    );
+    if (!executed) {
+      log('system', '⚠️ 你未执行宣告的反击，威慑失效！');
+    }
+    state.deterrenceState = null;
+  }
+
+  // 如果AI被暂停，进入手动AI控制模式
+  if(state.aiPaused){
+    // phase 保持 'player'，这样所有玩家操作函数（selectCard, playSelected等）都能正常工作
+    state.pendingBroadcasts=[];
+    state.currentBroadcast=null;
+    state.selectedCard=null;
+    state.targetGalaxy=null;
+    state.targetPlayerId=null;
+    state.cardsPlayedThisTurn=0;
+    // 找到下一个存活的AI
+    let nextId = state.currentTurnId + 1;
+    while(nextId < state.players.length){
+      const p = state.players[nextId];
+      if(p && !p.dead) break;
+      nextId++;
+    }
+    if(nextId >= state.players.length){
+      // 所有AI都已行动，进入下一回合
+      state.currentTurnId = 0;
+      finishRound();
+      return;
+    }
+    state.currentTurnId = nextId;
+    log('system', `⏸️ AI已暂停。当前回合: ${state.players[nextId].name}，请切换后操作`);
+    renderAll();
+    return;
+  }
+
+  state.phase='ai';
+  state.pendingBroadcasts=[];
+  state.currentBroadcast=null;
+  state.currentTurnId = 1; // 切换到AI-1
+  processNextAiTurn();
+}
+
+// 按顺序处理AI回合
+function processNextAiTurn(){
+  // 如果AI被暂停，不自动执行，等待玩家手动控制
+  if(state.aiPaused){
+    state.phase = 'player';
+    const currentP = state.players[state.currentTurnId];
+    if(currentP){
+      log('system', `⏸️ ${currentP.name} 的行动已暂停。请切换到该文明进行手动操作，或点击结束回合跳过`);
+    }
+    renderAll();
+    return;
+  }
+
+  // 找到下一个存活的AI
+  let nextId = state.currentTurnId;
+  while(nextId < state.players.length){
+    const p = state.players[nextId];
+    if(p && !p.dead) break;
+    nextId++;
+  }
+
+  if(nextId >= state.players.length){
+    // 所有AI都已行动，进入下一回合
+    state.currentTurnId = 0;
+    if(state.pendingBroadcasts.length>0){state.phase='broadcast';return}
+    finishRound();
+    return;
+  }
+
+  state.currentTurnId = nextId;
+  const p = state.players[nextId];
+
+  // 显示当前AI正在思考
+  log('system', `🤖 ${p.name} 正在思考...`);
+  renderStatus(); // 更新状态栏显示当前回合
+
+  // 延迟0.5秒后执行AI行动
+  setTimeout(()=>{
+    aiTurn(p, ()=>{
+      // AI行动完成后，延迟0.5秒再进入下一个
+      setTimeout(()=>{
+        state.currentTurnId++;
+        processNextAiTurn();
+      }, 500);
+    });
+  }, 500);
+}
+
+function aiChooseBroadcast(p){
+  if(p.listenBase&&Math.random()<0.5)return null;
+  const valid=p.hand.filter(c=>c.type==='broadcast'&&c.cost<=p.energy);
+  if(!valid.length)return null;
+  const betray=valid.filter(c=>c.subtype==='伪装');
+  const coop=valid.filter(c=>c.subtype==='合作');
+  if(betray.length&&Math.random()<0.7)return betray[Math.floor(Math.random()*betray.length)];
+  if(coop.length)return coop[Math.floor(Math.random()*coop.length)];
+  return valid[Math.floor(Math.random()*valid.length)];
+}
+
+function useSpecial(p,card){
+  spendEnergy(p.id,card.cost);
+
+  const oldEnergy = p.energy;
+  const oldBuildings = [...p.buildings];
+  p.energy = 0;
+  p.buildings = [];
+  p.hasDyson = false;
+
+  const oldGal=p.galaxy;
+  const removed=state.incomingAttacks.filter(a=>a.targetGalaxy===oldGal||a.targetPlayerId===p.id);
+  state.incomingAttacks=state.incomingAttacks.filter(a=>a.targetGalaxy!==oldGal&&a.targetPlayerId!==p.id);
+
+  // 静默选择新星系
+  const available = [];
+  for(let g = 1; g <= GALAXY_COUNT; g++){
+    if(g !== oldGal && !state.deadGalaxies.includes(g)) available.push(g);
+  }
+  const newGal = available.length > 0 ? available[Math.floor(Math.random() * available.length)] : oldGal;
+  p.galaxy = newGal;
+
+  // 日志只显示文明名称，不透露任何细节
+  AudioSys.playShip();log('special', `✨ ${p.name} 使用了光速飞船`);
+
+  const idx=p.hand.indexOf(card);if(idx>=0)p.hand.splice(idx,1);
+  state.deck.push(card);state.deck=shuffle(state.deck);
+  renderAll();
+}
+
+// 自动使用光速飞船逃逸（降维打击触发，不播放星系抽奖动画）
+function autoUseLightSpeedEscape(p, card){
+  spendEnergy(p.id, card.cost);
+
+  const oldEnergy = p.energy;
+  const oldBuildings = [...p.buildings];
+  p.energy = 0;
+  p.buildings = [];
+  p.hasDyson = false;
+
+  if (oldBuildings.length > 0) {
+    log('special', `✨ ${p.name} 启动光速飞船，弃掉了所有能量(${oldEnergy})和建设牌(${oldBuildings.join('、')})`);
+  } else {
+    log('special', `✨ ${p.name} 启动光速飞船，弃掉了所有能量(${oldEnergy})`);
+  }
+
+  const oldGal = p.galaxy;
+
+  // 静默选择新星系（不播放抽奖动画）
+  const available = [];
+  for(let g = 1; g <= GALAXY_COUNT; g++){
+    if(g !== oldGal && !state.deadGalaxies.includes(g)){
+      available.push(g);
+    }
+  }
+  const newGal = available.length > 0 ? available[Math.floor(Math.random() * available.length)] : oldGal;
+
+  p.galaxy = newGal;
+  log('special', `✨ ${p.name} 启动光速飞船，从星系${oldGal}迁移到星系${newGal}`);
+
+  const cardIdx = p.hand.indexOf(card);
+  if(cardIdx >= 0) p.hand.splice(cardIdx, 1);
+  state.deck.push(card);
+  state.deck = shuffle(state.deck);
+  renderAll();
+}
+
+
+function aiTurn(p, onComplete){
+  if(state.aiPaused){if(onComplete)onComplete();return;}
+  let cardsPlayed=0;const maxCards=2;
+  const me=p;
+  const enemies=state.players.filter(op=>op.id!==me.id&&!op.dead);
+  const threats=state.incomingAttacks.filter(a=>a.targetGalaxy===me.galaxy||a.targetPlayerId===me.id);
+  const maxThreat=threats.length?Math.max(...threats.map(t=>t.level)):0;
+
+  // ===== 威胁评估与防御 =====
+  if(threats.length>0){
+    // 1. 优先光速飞船逃逸（降维打击或高威胁）
+    const hasDim=threats.some(t=>t.level>=99);
+    const ship=me.hand.find(c=>c.type==='special'&&c.name==='光速飞船'&&c.cost<=me.energy);
+    if(ship&&(hasDim||maxThreat>=3)&&cardsPlayed<maxCards){
+      useSpecial(me,ship);cardsPlayed++;if(cardsPlayed>=maxCards){drawToFour(me,onComplete);return;}
+    }
+    // 2. 部署防御
+    const def=me.hand.find(c=>c.type==='defense'&&c.cost<=me.energy&&c.name!=='监听基地'&&c.maxLevel>=maxThreat);
+    if(def&&cardsPlayed<maxCards){
+      spendEnergy(me.id,def.cost);me.defense=def;me.hand.splice(me.hand.indexOf(def),1);
+      log('defense',`🛡️ ${me.name} 在星系${me.galaxy}部署了 ${def.name}`);cardsPlayed++;
+      if(cardsPlayed>=maxCards){drawToFour(me,onComplete);return;}
+    }
+    // 3. 监听基地（有广播威胁时）
+    const hasBroadcastThreat=enemies.some(e=>{
+      const dist=getDistances(e.galaxy);
+      return dist[me.galaxy]<=2;
+    });
+    const listen=me.hand.find(c=>c.type==='defense'&&c.name==='监听基地'&&c.cost<=me.energy);
+    if(listen&&!me.listenBase&&hasBroadcastThreat&&cardsPlayed<maxCards){
+      spendEnergy(me.id,listen.cost);me.listenBase=true;me.hand.splice(me.hand.indexOf(listen),1);
+      log('defense',`🛡️ ${me.name} 部署了监听基地`);cardsPlayed++;
+      if(cardsPlayed>=maxCards){drawToFour(me,onComplete);return;}
+    }
+  }
+
+  // ===== 建设优先级 =====
+  // 优先建造高产出建筑，能源充足时优先戴森球
+  const buildings=me.hand.filter(c=>c.type==='building'&&c.cost<=me.energy&&!(c.name==='戴森球'&&me.hasDyson));
+  buildings.sort((a,b)=>b.gain-a.gain); // 按产出排序
+  const bld=buildings[0];
+  if(bld&&cardsPlayed<maxCards){
+    // 能源充裕或手牌不好时建造
+    const handQuality=me.hand.filter(c=>c.type==='attack'||c.type==='broadcast').length;
+    const shouldBuild=me.energy>=bld.cost+3||handQuality<2||state.round>3;
+    if(shouldBuild){
+      spendEnergy(me.id,bld.cost);me.buildings.push(bld.name);if(bld.name==='戴森球')me.hasDyson=true;
+      me.hand.splice(me.hand.indexOf(bld),1);
+      log('building',`🏗️ ${me.name} 建造了 ${bld.name}`);cardsPlayed++;
+      if(cardsPlayed>=maxCards){drawToFour(me,onComplete);return;}
+    }
+  }
+
+  // ===== 攻击策略 =====
+  // 评估最优攻击目标
+  function scoreTarget(target){
+    let score=0;
+    const distMap=getDistances(me.galaxy);
+    const dist=distMap[target.galaxy]||1;
+    // 近距离优先（打击更快到达）
+    score+=(3-dist)*10;
+    // 低能量目标优先（难以防御/逃逸）
+    score+=(20-target.energy);
+    // 有建设的目标优先（打击收益高）
+    score+=target.buildings.length*15;
+    // 有防御的目标降低优先级（除非有破防手段）
+    if(target.defense)score-=20;
+    // 已被水滴封锁的目标优先（无法广播，容易击杀）
+    if(target.waterDropBlocked)score+=10;
+    return score;
+  }
+
+  const atkCards=me.hand.filter(c=>c.type==='attack'&&c.cost<=me.energy);
+  if(atkCards.length>0&&enemies.length>0&&cardsPlayed<maxCards){
+    // 选择最佳攻击牌
+    let bestAtk=null;
+    // 优先降维打击（高威胁目标）
+    const dim=atkCards.find(c=>c.name==='降维打击');
+    const highValueTarget=enemies.filter(e=>e.energy>=8||e.buildings.length>=2).sort((a,b)=>scoreTarget(b)-scoreTarget(a))[0];
+    if(dim&&highValueTarget&&me.energy>=dim.cost+5)bestAtk=dim;
+    // 其次水滴探测器（有广播牌的目标）
+    if(!bestAtk){
+      const waterDrop=atkCards.find(c=>c.name==='水滴探测器');
+      const hasBroadcast=enemies.find(e=>e.hand.some(c=>c.type==='broadcast'));
+      if(waterDrop&&hasBroadcast)bestAtk=waterDrop;
+    }
+    // 然后湮灭/光粒（有建设的目标）
+    if(!bestAtk){
+      const heavyAtk=atkCards.filter(c=>c.level>=2).sort((a,b)=>b.level-a.level)[0];
+      const builtUpEnemy=enemies.find(e=>e.buildings.length>0);
+      if(heavyAtk&&builtUpEnemy)bestAtk=heavyAtk;
+    }
+    // 最后热核（破掩体）或任意可用攻击
+    if(!bestAtk){
+      const thermal=atkCards.find(c=>c.breaksMask);
+      const shieldedEnemy=enemies.find(e=>e.defense&&e.defense.name==='掩体星环');
+      if(thermal&&shieldedEnemy)bestAtk=thermal;
+    }
+    if(!bestAtk)bestAtk=atkCards[0];
+
+    // 选择最佳目标
+    const validEnemies=enemies.filter(e=>e.galaxy!==me.galaxy);
+    if(validEnemies.length>0){
+      validEnemies.sort((a,b)=>scoreTarget(b)-scoreTarget(a));
+      const target=validEnemies[0];
+
+      // 根据威胁程度决定是否攻击
+      const targetScore=scoreTarget(target);
+      const shouldAttack=targetScore>15||state.round>3||me.energy>=bestAtk.cost+8;
+
+      if(shouldAttack){
+        spendEnergy(me.id,bestAtk.cost);
+        const isTechLock=bestAtk.techLock||false;
+        const isDim=bestAtk.name==='降维打击';
+        const isWaterDrop=bestAtk.name==='水滴探测器';
+
+        if(isTechLock){
+          const tg=Array.from({length:GALAXY_COUNT},(_,i)=>i+1).filter(g=>g!==me.galaxy&&!state.deadGalaxies.includes(g));
+          const targetGal=tg[Math.floor(Math.random()*tg.length)];
+          const t=state.players.find(tp=>tp.galaxy===targetGal&&!tp.dead);
+          if(t){
+            const blds=t.hand.filter(c=>c.type==='building');
+            if(blds.length>0){for(let b of blds)state.deck.push(b);t.hand=t.hand.filter(c=>c.type!=='building');state.deck=shuffle(state.deck);}
+          }
+          log('system',`🔒 ${me.name} 使用了科技锁死...`);
+        }else if(isWaterDrop){
+          const t=state.players.find(tp=>tp.galaxy===target.galaxy&&!tp.dead);
+          if(t){
+            const bcs=t.hand.filter(c=>c.type==='broadcast');
+            if(bcs.length>0){for(let b of bcs)state.deck.push(b);t.hand=t.hand.filter(c=>c.type!=='broadcast');state.deck=shuffle(state.deck);}
+            if(!t.waterDropBlocked)t.waterDropBlocked=true;
+          }
+          log('system',`💧 ${me.name} 使用了水滴探测器...`);
+        }else if(isDim){
+          const distMap=getDistances(me.galaxy);
+          const travelTurns=distMap[target.galaxy]||1;
+          state.incomingAttacks.push({from:me.galaxy,targetGalaxy:target.galaxy,targetPlayerId:null,level:bestAtk.level,arriveRound:state.round+travelTurns,breaksMask:false,isDim:true,attackerId:me.id});
+          log('attack',`🚀 ${me.name} 向星系${target.galaxy}发射了降维打击！${travelTurns}回合后到达`);
+        }else{
+          const distMap=getDistances(me.galaxy);
+          const travelTurns=distMap[target.galaxy]||1;
+          state.incomingAttacks.push({from:me.galaxy,targetGalaxy:target.galaxy,targetPlayerId:null,level:bestAtk.level,arriveRound:state.round+travelTurns,breaksMask:bestAtk.breaksMask||false,isDim:false,attackerId:me.id});
+          log('attack',`🚀 ${me.name} 向星系${target.galaxy}发射了 ${bestAtk.name}（等级${bestAtk.level}），${travelTurns}回合后到达`);
+        }
+        me.hand.splice(me.hand.indexOf(bestAtk),1);cardsPlayed++;
+        if(cardsPlayed>=maxCards){drawToFour(me,onComplete);return;}
+      }
+    }
+  }
+
+  // ===== 广播策略 =====
+  // 优先使用伪装广播，目标选择能量高的敌人（更容易获得收益）
+  const bcCards=me.hand.filter(c=>c.type==='broadcast'&&c.cost<=me.energy);
+  if(bcCards.length>0&&enemies.length>0&&cardsPlayed<maxCards){
+    // 优先伪装，其次合作
+    const betray=bcCards.filter(c=>c.subtype==='伪装');
+    const coop=bcCards.filter(c=>c.subtype==='合作');
+    const bc=betray.length>0&&Math.random()<0.7?betray[0]:coop.length>0?coop[0]:bcCards[0];
+
+    const dist=getDistances(me.galaxy);
+    const reach=Object.keys(dist).map(Number).filter(g=>{
+      if(g===me.galaxy)return false;
+      if(state.deadGalaxies.includes(g))return false;
+      return dist[g]<=(bc.range===999?99:bc.range);
+    });
+    if(reach.length>0){
+      // 优先选择有文明且能量高的星系
+      const scored=reach.map(g=>{
+        const occupant=enemies.find(e=>e.galaxy===g);
+        return {g,score:occupant?occupant.energy:0};
+      }).sort((a,b)=>b.score-a.score);
+      const tg=scored[0].score>0?scored[0].g:reach[Math.floor(Math.random()*reach.length)];
+      spendEnergy(me.id,bc.cost);
+      me.hand.splice(me.hand.indexOf(bc),1);
+      sendBroadcast(me.id,bc,tg);
+      cardsPlayed++;
+      if(cardsPlayed>=maxCards){drawToFour(me,onComplete);return;}
+    }
+  }
+
+  // ===== 计划牌使用 =====
+  const planCards=me.hand.filter(c=>c.type==='plan'&&c.cost<=me.energy);
+  if(planCards.length>0&&cardsPlayed<maxCards){
+    const plan=planCards[0];
+    if(plan.name==='面壁计划'){
+      spendEnergy(me.id,plan.cost);
+      const broadcastTypes=[
+        {type:'broadcast',name:'恒星广播',cost:0,range:1,subtype:'合作',desc:'距离1。双方合作各+3能量'},
+        {type:'broadcast',name:'恒星广播',cost:0,range:1,subtype:'伪装',desc:'距离1。对方合作你+5能量'},
+        {type:'broadcast',name:'宇宙广播',cost:1,range:2,subtype:'合作',desc:'距离2。双方合作各+3能量'},
+        {type:'broadcast',name:'宇宙广播',cost:1,range:2,subtype:'伪装',desc:'距离2。对方合作你+5能量'},
+        {type:'broadcast',name:'超距广播',cost:2,range:999,subtype:'合作',desc:'无限距离。双方合作各+3能量'},
+        {type:'broadcast',name:'超距广播',cost:2,range:999,subtype:'伪装',desc:'无限距离。对方合作你+5能量'}
+      ];
+      const newCard={...broadcastTypes[Math.floor(Math.random()*broadcastTypes.length)],uid:Math.random().toString(36).slice(2)};
+      me.hand.push(newCard);
+      AudioSys.playPlan();log('system',`📋 ${me.name} 执行面壁计划，获得了一张 ${newCard.name}(${newCard.subtype})`);
+      me.hand.splice(me.hand.indexOf(plan),1);cardsPlayed++;
+      if(cardsPlayed>=maxCards){drawToFour(me,onComplete);return;}
+    }else if(plan.name==='群星计划'){
+      addEnergy(me.id,2);
+      const bcCards=me.hand.filter(c=>c.type==='broadcast');
+      if(bcCards.length>0){
+        const removed=bcCards[Math.floor(Math.random()*bcCards.length)];
+        me.hand.splice(me.hand.indexOf(removed),1);state.deck.push(removed);state.deck=shuffle(state.deck);
+        AudioSys.playPlan();log('system',`📋 ${me.name} 执行群星计划，获得2能源，弃掉了 ${removed.name}(${removed.subtype})`);
+      }else{
+        AudioSys.playPlan();log('system',`📋 ${me.name} 执行群星计划，获得2能源`);
+      }
+      me.hand.splice(me.hand.indexOf(plan),1);cardsPlayed++;
+      if(cardsPlayed>=maxCards){drawToFour(me,onComplete);return;}
+    }else if(plan.name==='阶梯计划'){
+      const targets=Array.from({length:GALAXY_COUNT},(_,i)=>i+1).filter(g=>g!==me.galaxy&&!state.deadGalaxies.includes(g));
+      if(targets.length>0){
+        spendEnergy(me.id,plan.cost);
+        const tg=targets[Math.floor(Math.random()*targets.length)];
+        const distMap=getDistances(me.galaxy);
+        const travelTurns=distMap[tg]||1;
+        state.incomingAttacks.push({from:me.galaxy,targetGalaxy:tg,targetPlayerId:null,level:0,arriveRound:state.round+travelTurns,isPlan:true,planType:'阶梯计划',senderId:me.id,hidden:true});
+        AudioSys.playPlan();log('system',`📋 ${me.name} 执行阶梯计划，探测器已发射`);
+        me.hand.splice(me.hand.indexOf(plan),1);cardsPlayed++;
+        if(cardsPlayed>=maxCards){drawToFour(me,onComplete);return;}
+      }
+    }
+  }
+
+  // ===== 监听基地（无威胁时也会考虑部署） =====
+  const listen=me.hand.find(c=>c.type==='defense'&&c.name==='监听基地'&&c.cost<=me.energy);
+  if(listen&&!me.listenBase&&cardsPlayed<maxCards){
+    // 手牌中广播牌多的时候更需要监听基地
+    const needListen=me.hand.filter(c=>c.type==='broadcast').length>=2;
+    if(needListen||Math.random()<0.3){
+      spendEnergy(me.id,listen.cost);me.listenBase=true;me.hand.splice(me.hand.indexOf(listen),1);
+      log('defense',`🛡️ ${me.name} 部署了监听基地`);cardsPlayed++;
+      if(cardsPlayed>=maxCards){drawToFour(me,onComplete);return;}
+    }
+  }
+
+  drawToFour(me,onComplete);
+}
+
+// ==================== 玩家操作 ====================
+function selectCard(idx){
+  if(state.gameOver||state.phase!=='player')return;
+  state.selectedCard=idx;
+  state.targetGalaxy=null;
+  state.targetPlayerId=null;
+  renderAction();
+}
+function selectTarget(g){state.targetGalaxy=g;renderAction()}
+function selectTargetPlayer(pid){state.targetPlayerId=pid;renderAction()}
+
+function playSelected(){
+  if(state.selectedCard===null)return;
+  const me=state.players[state.myId];
+  const card=me.hand[state.selectedCard];
+  if(!canPlay(card))return;
+
+  // 获取被选中卡牌在手牌区的位置，用于飞牌动画起点
+  const handCards = document.querySelectorAll('#hand-box .card');
+  const selectedCardEl = handCards[state.selectedCard];
+  const fromRect = selectedCardEl ? selectedCardEl.getBoundingClientRect() : {left:window.innerWidth/2, top:window.innerHeight/2, width:0, height:0};
+
+  // 先隐藏手牌中的该牌（视觉上立即消失）
+  const cardIdx = state.selectedCard;
+  const savedCard = {...card}; // 复制卡牌信息
+  const savedTargetGalaxy = state.targetGalaxy;
+  const savedTargetPlayerId = state.targetPlayerId;
+
+  // 立即从手牌移除并重新渲染（隐藏该牌）
+  me.hand.splice(cardIdx, 1);
+  state.selectedCard = null;
+  renderHand();
+  renderAction();
+  renderStatus();
+
+  // 触发飞牌到星图动画
+  flyCardToGalaxy(savedCard, fromRect, ()=>{
+    // 动画完成后执行实际效果
+    executeCardEffect(savedCard, savedTargetGalaxy, savedTargetPlayerId);
+  });
+}
+
+// 卡牌效果执行（飞牌动画完成后调用）
+function executeCardEffect(card, targetGalaxy, targetPlayerId){
+  const me=state.players[state.myId];
+
+  if(card.type==='broadcast'){
+    if(!targetGalaxy)return;
+    spendEnergy(state.myId,card.cost);
+    state.cardsPlayedThisTurn++;
+    sendBroadcast(state.myId,card,targetGalaxy);
+    state.targetGalaxy=null;renderAll();
+  }
+  else if(card.type==='attack'){
+    if(card.techLock){
+      if(!targetGalaxy)return;
+      spendEnergy(state.myId,card.cost);
+      const target = state.players.find(p => p.galaxy === targetGalaxy && !p.dead);
+      if(target){
+        const blds = target.hand.filter(c => c.type === 'building');
+        if(blds.length > 0){
+          for(let b of blds) state.deck.push(b);
+          target.hand = target.hand.filter(c => c.type !== 'building');
+          state.deck = shuffle(state.deck);
+          log('attack', `🔒 [你] 科技锁死命中星系${targetGalaxy}！${target.name} 手中所有建造牌被弃掉！`);
+        }else{
+          log('attack', `🔒 [你] 科技锁死命中星系${targetGalaxy}，但该目标没有建造牌。`);
+        }
+      }else{
+        log('attack', `🔒 [你] 科技锁死命中星系${targetGalaxy}，但该星系没有存活文明。`);
+      }
+      log('system', `🔒 某文明使用了科技锁死...`);
+      state.cardsPlayedThisTurn++;
+      state.targetGalaxy=null;renderAll();
+    }
+    else if(card.name==='水滴探测器'){
+      if(!targetGalaxy)return;
+      spendEnergy(state.myId,card.cost);
+      // 水滴探测器即时生效，摧毁目标星系所有广播牌
+      const target = state.players.find(p => p.galaxy === targetGalaxy && !p.dead);
+      if(target){
+        const bcCards = target.hand.filter(c => c.type === 'broadcast');
+        if(bcCards.length > 0){
+          for(let b of bcCards) state.deck.push(b);
+          target.hand = target.hand.filter(c => c.type !== 'broadcast');
+          state.deck = shuffle(state.deck);
+          log('attack', `💧 [你] 水滴探测器命中星系${targetGalaxy}！${target.name} 的 ${bcCards.length} 张广播牌被摧毁！`);
+        }else{
+          log('attack', `💧 [你] 水滴探测器命中星系${targetGalaxy}，${target.name} 没有广播牌`);
+        }
+        // 标记该星系被水滴探测器封锁，以后获得的广播牌也会被摧毁
+        if(!target.waterDropBlocked) target.waterDropBlocked = true;
+      }else{
+        log('attack', `💧 [你] 水滴探测器命中星系${targetGalaxy}，但该星系没有存活文明`);
+      }
+      AudioSys.playAttack();log('system', `💧 某文明使用了水滴探测器...`);
+      me.hand.splice(me.hand.indexOf(card),1);
+      state.cardsPlayedThisTurn++;
+      state.targetGalaxy=null;renderAll();
+    }
+    else if(card.name==='降维打击'){
+      if(!targetGalaxy)return;
+      // 施咒者不能打击自己施咒的星系
+      if(state.curseState && !state.curseState.resolved && state.curseState.senderId === me.id && state.curseState.targetGalaxy === targetGalaxy){
+        log('system', '🔮 你不能打击自己施咒的星系！');
+        state.targetGalaxy=null;renderAll();return;
+      }
+      spendEnergy(state.myId,card.cost);
+      // 降维打击目标为星系，根据距离计算到达回合
+      const distMap = getDistances(me.galaxy);
+      const travelTurns = distMap[targetGalaxy] || 1;
+      state.incomingAttacks.push({from:me.galaxy,targetGalaxy:targetGalaxy,targetPlayerId:null,level:card.level,arriveRound:state.round+travelTurns,breaksMask:false,isDim:true,attackerId:me.id});
+      AudioSys.playAttack();log('attack',`🚀 你向星系${targetGalaxy}发射了降维打击！距离${travelTurns}，${travelTurns}回合后到达`);
+      state.cardsPlayedThisTurn++;
+      state.targetGalaxy=null;renderAll();
+    }
+    else if(card.name==='咒语'){
+      if(!targetGalaxy)return;
+      spendEnergy(state.myId,card.cost);
+      // 释放咒语：公布星系坐标
+      state.curseState = {
+        senderId: me.id,
+        senderName: me.name,
+        targetGalaxy: targetGalaxy,
+        releaseRound: state.round,
+        expireRound: state.round + 2,
+        resolved: false
+      };
+      // 所有文明都知道这个坐标和发送者
+      log('system', `🔮 ${me.name} 释放了咒语！公布星系${targetGalaxy}的坐标！2回合内打击该星系将触发咒语效果！`);
+      // 显示弹窗给所有玩家
+      showCurseModal(me.name, targetGalaxy);
+      me.hand.splice(me.hand.indexOf(card),1);
+      state.cardsPlayedThisTurn++;
+      state.targetGalaxy=null;renderAll();
+    }else{
+      if(!targetGalaxy)return;
+      // 施咒者不能打击自己施咒的星系
+      if(state.curseState && !state.curseState.resolved && state.curseState.senderId === me.id && state.curseState.targetGalaxy === targetGalaxy){
+        log('system', '🔮 你不能打击自己施咒的星系！');
+        state.targetGalaxy=null;renderAll();return;
+      }
+      spendEnergy(state.myId,card.cost);
+      // 普通攻击也根据距离计算到达回合
+      const distMap = getDistances(me.galaxy);
+      const travelTurns = distMap[targetGalaxy] || 1;
+      state.incomingAttacks.push({from:me.galaxy,targetGalaxy:targetGalaxy,targetPlayerId:null,level:card.level,arriveRound:state.round+travelTurns,breaksMask:card.breaksMask||false,isDim:false,attackerId:me.id});
+      AudioSys.playAttack();log('attack',`🚀 你向星系${targetGalaxy}发射 ${card.name}（等级${card.level}），${travelTurns}回合后到达`);
+      state.cardsPlayedThisTurn++;
+      state.targetGalaxy=null;renderAll();
+    }
+  }
+  else if(card.type==='defense'){
+    spendEnergy(state.myId,card.cost);
+    if(card.name==='监听基地'){me.listenBase=true;AudioSys.playDefense();log('defense',`🛡️ 部署监听基地，下回合收到广播时可选择不回应`)}
+    else{me.defense=card;AudioSys.playDefense();log('defense',`🛡️ 部署 ${card.name}，可防御等级${card.maxLevel}及以下打击`)}
+    state.cardsPlayedThisTurn++;renderAll();
+  }
+  else if(card.type==='building'){
+    spendEnergy(state.myId,card.cost);
+    me.buildings.push(card.name);if(card.name==='戴森球')me.hasDyson=true;
+    AudioSys.playBuilding();log('building',`🏗️ 建造 ${card.name}，每回合额外 +${card.gain} 能量`);
+    state.cardsPlayedThisTurn++;renderAll();
+  }
+  else if(card.type==='special'){
+    useSpecial(me,card);state.cardsPlayedThisTurn++;renderAll();
+  }else if(card.type==='plan'){
+    if(card.name==='面壁计划'){
+      spendEnergy(state.myId,card.cost);
+      // 随机获得一张广播牌
+      const broadcastTypes = [
+        {type:'broadcast',name:'恒星广播',cost:0,range:1,subtype:'合作',desc:'距离1。双方合作各+3能量'},
+        {type:'broadcast',name:'恒星广播',cost:0,range:1,subtype:'伪装',desc:'距离1。对方合作你+5能量'},
+        {type:'broadcast',name:'宇宙广播',cost:1,range:2,subtype:'合作',desc:'距离2。双方合作各+3能量'},
+        {type:'broadcast',name:'宇宙广播',cost:1,range:2,subtype:'伪装',desc:'距离2。对方合作你+5能量'},
+        {type:'broadcast',name:'超距广播',cost:2,range:999,subtype:'合作',desc:'无限距离。双方合作各+3能量'},
+        {type:'broadcast',name:'超距广播',cost:2,range:999,subtype:'伪装',desc:'无限距离。对方合作你+5能量'}
+      ];
+      const newCard = {...broadcastTypes[Math.floor(Math.random()*broadcastTypes.length)],uid:Math.random().toString(36).slice(2)};
+      // 面壁计划动画：旋转变成广播牌，再飞到手牌
+      animatePlanToBroadcast(newCard, ()=>{
+        me.hand.push(newCard);
+        AudioSys.playPlan();log('system',`📋 ${me.name} 执行面壁计划，获得了一张 ${newCard.name}(${newCard.subtype})`);
+        state.cardsPlayedThisTurn++;renderAll();
+      });
+    }else if(card.name==='群星计划'){
+      // 获得2能源
+      addEnergy(state.myId,2);
+      // 随机移除一张广播牌
+      const bcCards = me.hand.filter(c=>c.type==='broadcast');
+      if(bcCards.length>0){
+        const removed = bcCards[Math.floor(Math.random()*bcCards.length)];
+        me.hand.splice(me.hand.indexOf(removed),1);
+        state.deck.push(removed);state.deck=shuffle(state.deck);
+        AudioSys.playPlan();log('system',`📋 ${me.name} 执行群星计划，获得2能源，弃掉了 ${removed.name}(${removed.subtype})`);
+      }else{
+        log('system',`📋 ${me.name} 执行群星计划，获得2能源（手中无广播牌可移除）`);
+      }
+      // 注意：plan牌已经在playSelected中被移除了，这里不需要再移除
+      state.cardsPlayedThisTurn++;renderAll();
+    }else if(card.name==='阶梯计划'){
+      if(!targetGalaxy)return;
+      spendEnergy(state.myId,card.cost);
+      const distMap = getDistances(me.galaxy);
+      const travelTurns = distMap[targetGalaxy] || 1;
+      // 创建阶梯计划探测器（用 incomingAttacks 结构存储，但类型标记为 plan）
+      state.incomingAttacks.push({
+        from:me.galaxy,
+        targetGalaxy:targetGalaxy,
+        targetPlayerId:null,
+        level:0,
+        arriveRound:state.round+travelTurns,
+        isPlan:true,
+        planType:'阶梯计划',
+        senderId:me.id,
+        hidden:true // 其他玩家看不到目标星系
+      });
+      log('system',`📋 ${me.name} 执行阶梯计划，探测器已发射（${travelTurns}回合后到达某星系）`);
+      // 注意：plan牌已经在playSelected中被移除了，这里不需要再移除
+      state.cardsPlayedThisTurn++;
+      state.targetGalaxy=null;renderAll();
+    }
+  }
+}
+
+function discardSelected(){
+  if(state.selectedCard===null)return;
+  const me=state.players[state.myId];
+  const card=me.hand[state.selectedCard];
+
+  // 获取被选中卡牌在手牌区的位置，用于飞牌动画起点
+  const handCards = document.querySelectorAll('#hand-box .card');
+  const selectedCardEl = handCards[state.selectedCard];
+  const fromRect = selectedCardEl ? selectedCardEl.getBoundingClientRect() : {left:window.innerWidth/2, top:window.innerHeight/2, width:0, height:0};
+
+  // 获取主牌堆位置
+  const deckStack = document.getElementById('main-deck-stack');
+  const toRect = deckStack ? deckStack.getBoundingClientRect() : {left:window.innerWidth/2, top:200, width:60, height:84};
+
+  // 先记录信息并移除手牌
+  const cardName = card.name;
+  const cardType = card.type;
+  me.hand.splice(state.selectedCard,1);
+  state.selectedCard=null;
+  state.targetGalaxy=null;
+  state.targetPlayerId=null;
+  renderHand();
+  renderAction();
+
+  // 触发弃牌飞牌动画
+  flyCardToDeck(cardType, cardName, fromRect, toRect, ()=>{
+    state.deck.push(card);state.deck=shuffle(state.deck);
+    log('system',`你弃掉了 ${cardName}`);
+    updateDeckCounts();
+  });
+}
+
+function checkGameOver(){
+  const survivors=state.players.filter(p=>!p.dead);
+  const pendingAttacks = state.incomingAttacks.length;
+
+  // 结局1：终极文明 - 所有其他玩家被淘汰
+  // 如果只剩1人，无论是否有未生效打击，都判定胜利（打击来源已死，打击失效）
+  if(survivors.length===1){
+    state.gameOver=true;
+    // 清除所有未生效打击（发送者已死，打击失效）
+    if(state.incomingAttacks.length > 0){
+      state.incomingAttacks = [];
+      log('system', '☠️ 所有打击来源已毁灭，剩余打击消散在虚空中');
+    }
+    const s=survivors[0];
+    document.getElementById('go-title').textContent=s.id===state.myId?'🎉 终极文明！':'💀 你的文明被毁灭了';
+    document.getElementById('go-sub').textContent=`胜者是: ${s.name} (星系${s.galaxy})`;
+    openModal('modal-gameover');
+    return;
+  }
+
+  // 结局2：永恒黑暗 - 所有打击生效后无幸存者
+  if(survivors.length===0){
+    state.gameOver=true;
+    document.getElementById('go-title').textContent='☠️ 永恒黑暗';
+    document.getElementById('go-sub').textContent='所有文明同归于尽，黑暗森林中没有赢家。';
+    openModal('modal-gameover');
+    return;
+  }
+}
+
+function resetGame(){
+  closeModal('modal-gameover');
+  closeModal('modal-result');
+  closeModal('modal-broadcast');
+  closeModal('modal-deterrence');
+  document.getElementById('game-container').style.display = 'none';
+  document.getElementById('setup-container').style.display = 'block';
+  state = {};
+}
+
+function backToSetup(){
+  if(confirm('确定要返回设置界面吗？当前游戏进度将丢失。')){
+    closeModal('modal-gameover');
+    closeModal('modal-result');
+    closeModal('modal-broadcast');
+    closeModal('modal-deterrence');
+    document.getElementById('game-container').style.display = 'none';
+    document.getElementById('setup-container').style.display = 'block';
+    state = {};
+  }
+}
+
+// ==================== 渲染 ====================
+function renderAll(){renderStatus();renderMap();renderHand();renderAction();renderPlayers();renderThreats();renderDeterrenceUI();renderDebugPanel();updateDeckCounts()}
+function renderStatus(){
+  const me=state.players[state.myId];
+  document.getElementById('disp-galaxy').textContent=me.galaxy;
+  document.getElementById('disp-energy').textContent=me.energy;
+  document.getElementById('disp-round').textContent=state.round;
+  document.getElementById('disp-alive').textContent=state.players.filter(p=>!p.dead).length+'/'+state.playerCount;
+  // 显示咒语状态
+  const curseEl = document.getElementById('disp-curse');
+  if(curseEl){
+    if(state.curseState && !state.curseState.resolved){
+      const turnsLeft = state.curseState.expireRound - state.round;
+      curseEl.textContent = `🔮 咒语: 星系${state.curseState.targetGalaxy} (${turnsLeft}回)`;
+      curseEl.style.display = 'inline';
+    } else {
+      curseEl.style.display = 'none';
+    }
+  }
+  // 显示已出牌数/上限
+  const playedEl = document.getElementById('disp-played');
+  if(playedEl) playedEl.textContent = state.cardsPlayedThisTurn + '/2';
+
+  // 显示当前回合文明
+  const turnEl = document.getElementById('disp-turn-player');
+  if(turnEl){
+    const currentPlayer = state.players[state.currentTurnId];
+    if(currentPlayer){
+      turnEl.textContent = currentPlayer.name;
+    }
+  }
+
+  // 更新结束回合按钮状态
+  const endTurnBtn = document.getElementById('btn-endturn');
+  if(endTurnBtn){
+    const currentPlayer = state.players[state.currentTurnId];
+    const isMyTurn = state.currentTurnId === state.myId;
+    if(isMyTurn){
+      // 玩家自己的回合，或AI暂停手动模式
+      endTurnBtn.textContent = '结束回合';
+      endTurnBtn.disabled = false;
+      endTurnBtn.style.opacity = '1';
+      endTurnBtn.style.cursor = 'pointer';
+      endTurnBtn.style.background = '#059669';
+    } else if(currentPlayer){
+      // 其他文明的回合
+      endTurnBtn.textContent = `🤖 ${currentPlayer.name} 正在思考...`;
+      endTurnBtn.disabled = true;
+      endTurnBtn.style.opacity = '0.5';
+      endTurnBtn.style.cursor = 'not-allowed';
+      endTurnBtn.style.background = '#334155';
+    }
+  }
+}function renderMap(){
+  const me=state.players[state.myId];
+  const connG=document.getElementById('connections');
+  const nodeG=document.getElementById('nodes');
+  connG.innerHTML='';nodeG.innerHTML='';
+
+  // 更新星系牌堆：只显示自己的星系，其他显示?
+  const galDeckGrid = document.getElementById('galaxy-deck-grid');
+  if(galDeckGrid){
+    const me = state.players[state.myId];
+    const cards = galDeckGrid.querySelectorAll('.galaxy-card');
+    cards.forEach(card=>{
+      const g = parseInt(card.dataset.g);
+      card.classList.remove('mine','dead');
+      card.innerHTML = '<div class="g-back">?</div>';
+      if(state.deadGalaxies.includes(g)){
+        card.classList.add('dead');
+      }else if(me && me.galaxy === g){
+        card.classList.add('mine');
+        card.innerHTML = `<div class="g-num">${g}</div><div class="g-icon">🪐</div>`;
+      }
+    });
+  }
+  for(let[a,b]of CONNECTIONS){
+    const p1=GALAXY_POS[a-1],p2=GALAXY_POS[b-1];
+    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',p1.x);line.setAttribute('y1',p1.y);
+    line.setAttribute('x2',p2.x);line.setAttribute('y2',p2.y);
+    line.setAttribute('class','conn-line');
+    connG.appendChild(line);
+  }
+  for(let i=0;i<GALAXY_COUNT;i++){
+    const gnum=i+1,pos=GALAXY_POS[i];
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','galaxy-node');
+    g.setAttribute('transform',`translate(${pos.x},${pos.y})`);
+    if(gnum===me.galaxy)g.classList.add('mine');
+    else if(state.deadGalaxies.includes(gnum))g.classList.add('dead');
+    else if(state.knownGalaxies.includes(gnum))g.classList.add('known');
+    else g.classList.add('unknown');
+    // 咒语标记的星系显示黄色
+    if(state.curseState && state.curseState.targetGalaxy === gnum && !state.curseState.resolved){
+      g.classList.add('curse');
+    }
+    const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('r','26');g.appendChild(circle);
+    const text=document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.textContent=gnum;g.appendChild(text);
+
+        // 建造牌和防御标记不在星图上显示（隐藏位置信息）
+    if(state.deadGalaxies.includes(gnum)){
+      const deadP=state.players.find(p=>p.galaxy===gnum&&p.dead);
+      const dtext=document.createElementNS('http://www.w3.org/2000/svg','text');
+      dtext.setAttribute('y','42');dtext.setAttribute('text-anchor','middle');
+      dtext.setAttribute('font-size','10');dtext.setAttribute('fill','#f87171');
+      dtext.textContent=deadP?deadP.name:'💀';g.appendChild(dtext);
+    }
+    nodeG.appendChild(g);
+  }
+}
+
+function renderHand(){
+  const me=state.players[state.myId];
+  const box=document.getElementById('hand-box');
+  document.getElementById('hand-count').textContent=me.hand.length+'/4';
+  box.innerHTML='';
+  me.hand.forEach((card,idx)=>{
+    const div=document.createElement('div');
+    const selected=state.selectedCard===idx;
+    div.className=`card card-${card.type} ${selected?'selected':''}`;
+    div.onclick=()=>selectCard(idx);
+    const tag=card.subtype?`<span class="card-tag tag-${card.subtype==='合作'?'cooperate':'betray'}">${card.subtype}</span>`:'';
+    const icon={broadcast:'📡',attack:'🚀',defense:'🛡️',building:'🏗️',special:'✨',plan:'📋'}[card.type]||'?';
+    div.innerHTML=`<div class="card-header"><span class="card-type-icon">${icon}</span><span class="card-cost">${card.cost}⚡</span></div><div class="card-name">${card.name}</div><div class="card-desc">${card.desc}</div>${tag}`;
+    box.appendChild(div);
+  });
+}
+
+function renderAction(){
+  const area=document.getElementById('action-area');
+  const content=document.getElementById('action-content');
+  const title=document.getElementById('action-title');
+  if(state.selectedCard===null){area.style.display='none';return}
+  area.style.display='block';
+  const me=state.players[state.myId];
+  const card=me.hand[state.selectedCard];
+  const playable=canPlay(card);
+  const remaining = 2 - state.cardsPlayedThisTurn;
+  const limitText = remaining > 0 ? `(本回合还可出 ${remaining} 张牌)` : '<span style="color:#f87171">(本回合已用完2张牌额度)</span>';
+  title.innerHTML=`选中: <strong>${card.name}</strong> (${card.cost}能量) ${limitText}`;
+  let html='';
+  if(card.type==='broadcast'){
+    const reach=getReachable(card.range,me.galaxy);
+    html+=`<div class="target-label">选择目标星系 (最大距离: ${card.range===999?'∞':card.range})</div>`;
+    html+=`<div class="target-grid">`;
+    for(let g=1;g<=GALAXY_COUNT;g++){
+      const isReach=reach.includes(g),isDead=state.deadGalaxies.includes(g);
+      const cls=['target-btn'];
+      if(state.targetGalaxy===g)cls.push('selected');
+      if(isDead)cls.push('dead');else if(!isReach)cls.push('unreachable');
+      html+=`<button class="${cls.join(' ')}" ${(!isReach||isDead)?'disabled':''} onclick="selectTarget(${g})">${g}</button>`;
+    }
+    html+=`</div>`;
+    html+=`<button class="btn btn-primary" ${!state.targetGalaxy||!playable?'disabled':''} onclick="playSelected()">发送广播</button>`;
+  }else if(card.type==='attack'){
+    if(card.techLock){
+      const targets=Array.from({length:GALAXY_COUNT},(_,i)=>i+1).filter(g=>g!==me.galaxy&&!state.deadGalaxies.includes(g));
+      html+=`<div class="target-label">选择科技锁死目标星系 (即时生效)</div><div class="target-grid">`;
+      for(let g of targets){const cls=['target-btn'];if(state.targetGalaxy===g)cls.push('selected');html+=`<button class="${cls.join(' ')}" onclick="selectTarget(${g})">${g}</button>`;}
+      html+=`</div><div class="hint-text">科技锁死将弃掉目标星系玩家手中所有建造牌</div>`;
+      if(me.energy < card.cost){
+        html+=`<button class="btn btn-danger" disabled style="opacity:0.4;background:#334155;cursor:not-allowed">⚡能源不足 - 发射科技锁死 (需${card.cost}能量)</button>`;
+      } else {
+        html+=`<button class="btn btn-danger" ${!state.targetGalaxy||!playable?'disabled':''} onclick="playSelected()">发射科技锁死</button>`;
+      }
+    }
+    else if(card.name==='水滴探测器'){
+      const targets=Array.from({length:GALAXY_COUNT},(_,i)=>i+1).filter(g=>g!==me.galaxy&&!state.deadGalaxies.includes(g));
+      html+=`<div class="target-label">选择水滴探测器目标星系（即时生效）</div><div class="target-grid">`;
+      for(let g of targets){
+        const cls=['target-btn'];
+        if(state.targetGalaxy===g)cls.push('selected');
+        html+=`<button class="${cls.join(' ')}" onclick="selectTarget(${g})">${g}</button>`;
+      }
+      html+=`</div><div class="hint-text">水滴探测器摧毁目标星系文明手中所有广播牌，并封锁该星系（以后获得的广播牌也会被摧毁）</div>`;
+      if(me.energy < card.cost){
+        html+=`<button class="btn btn-danger" disabled style="opacity:0.4;background:#334155;cursor:not-allowed">⚡能源不足 - 发射水滴探测器 (需${card.cost}能量)</button>`;
+      } else if(state.curseState && !state.curseState.resolved && state.curseState.senderId === me.id){
+        html+=`<button class="btn btn-danger" disabled style="opacity:0.4;background:#334155;cursor:not-allowed">🔮 施咒中 - 不能打出其他打击牌</button>`;
+      } else {
+        html+=`<button class="btn btn-danger" ${!state.targetGalaxy||!playable?'disabled':''} onclick="playSelected()">发射水滴探测器</button>`;
+      }
+    }
+    else if(card.name==='咒语'){
+      const targets=Array.from({length:GALAXY_COUNT},(_,i)=>i+1).filter(g=>!state.deadGalaxies.includes(g));
+      html+=`<div class="target-label">选择要公布的星系坐标（所有文明都会看到）</div><div class="target-grid">`;
+      for(let g of targets){
+        const cls=['target-btn'];
+        if(state.targetGalaxy===g)cls.push('selected');
+        html+=`<button class="${cls.join(' ')}" onclick="selectTarget(${g})">${g}</button>`;
+      }
+      html+=`</div><div class="hint-text">公布坐标后，若2回合内该星系被打击，发送者与打击者获益；若该星系有文明，双方各+3能源；若无文明，发送者+5能源。2回合内无人打击则无收益。</div>`;
+      if(me.energy < card.cost){
+        html+=`<button class="btn btn-danger" disabled style="opacity:0.4;background:#334155;cursor:not-allowed">⚡能源不足 - 释放咒语 (需${card.cost}能量)</button>`;
+      } else {
+        html+=`<button class="btn btn-danger" ${!state.targetGalaxy||!playable?'disabled':''} onclick="playSelected()">释放咒语</button>`;
+      }
+    }
+    else if(card.name==='降维打击'){
+      const targets=Array.from({length:GALAXY_COUNT},(_,i)=>i+1).filter(g=>g!==me.galaxy&&!state.deadGalaxies.includes(g));
+      html+=`<div class="target-label">选择降维打击目标星系（根据距离决定到达时间）</div><div class="target-grid">`;
+      for(let g of targets){
+        const distMap=getDistances(me.galaxy);
+        const dist=distMap[g]||1;
+        const cls=['target-btn'];
+        if(state.targetGalaxy===g)cls.push('selected');
+        html+=`<button class="${cls.join(' ')}" onclick="selectTarget(${g})">${g}<span style="font-size:9px;color:#94a3b8">(${dist}回)</span></button>`;
+      }
+      html+=`</div><div class="hint-text">降维打击清除目标星系及其中所有文明，到达时间 = 距离</div>`;
+      if(me.energy < card.cost){
+        html+=`<button class="btn btn-danger" disabled style="opacity:0.4;background:#334155;cursor:not-allowed">⚡能源不足 - 发动降维打击 (需${card.cost}能量)</button>`;
+      } else if(state.curseState && !state.curseState.resolved && state.curseState.senderId === me.id){
+        html+=`<button class="btn btn-danger" disabled style="opacity:0.4;background:#334155;cursor:not-allowed">🔮 施咒中 - 不能打出其他打击牌</button>`;
+      } else {
+        html+=`<button class="btn btn-danger" ${!state.targetGalaxy||!playable?'disabled':''} onclick="playSelected()">发动降维打击</button>`;
+      }
+    }else{
+      const targets=Array.from({length:GALAXY_COUNT},(_,i)=>i+1).filter(g=>g!==me.galaxy&&!state.deadGalaxies.includes(g));
+      html+=`<div class="target-label">选择打击目标星系</div><div class="target-grid">`;
+      for(let g of targets){
+        const distMap=getDistances(me.galaxy);
+        const dist=distMap[g]||1;
+        const cls=['target-btn'];
+        if(state.targetGalaxy===g)cls.push('selected');
+        html+=`<button class="${cls.join(' ')}" onclick="selectTarget(${g})">${g}<span style="font-size:9px;color:#94a3b8">(${dist}回)</span></button>`;
+      }
+      html+=`</div><div class="hint-text">${card.name}，到达时间 = 距离</div>`;
+      if(me.energy < card.cost){
+        html+=`<button class="btn btn-danger" disabled style="opacity:0.4;background:#334155;cursor:not-allowed">⚡能源不足 - 发射${card.name} (需${card.cost}能量)</button>`;
+      } else if(state.curseState && !state.curseState.resolved && state.curseState.senderId === me.id){
+        html+=`<button class="btn btn-danger" disabled style="opacity:0.4;background:#334155;cursor:not-allowed">🔮 施咒中 - 不能打出其他打击牌</button>`;
+      } else {
+        html+=`<button class="btn btn-danger" ${!state.targetGalaxy||!playable?'disabled':''} onclick="playSelected()">发射${card.name}</button>`;
+      }
+    }
+  }else if(card.type==='defense'){
+    if(card.name==='监听基地'){html+=`<p style="font-size:12px;color:#94a3b8;margin-bottom:10px">部署后，下回合收到广播时可以选择不回应（不消耗广播牌）。</p>`}
+    else{html+=`<p style="font-size:12px;color:#94a3b8;margin-bottom:10px">可防御等级 ${card.maxLevel} 及以下的打击。</p>`}
+    if(me.energy < card.cost){
+      html+=`<button class="btn btn-success" disabled style="opacity:0.4;background:#334155;cursor:not-allowed">⚡能源不足 - 部署${card.name} (需${card.cost}能量)</button>`;
+    } else {
+      html+=`<button class="btn btn-success" ${!playable?'disabled':''} onclick="playSelected()">部署${card.name}</button>`;
+    }
+  }else if(card.type==='building'){
+    if(card.name==='戴森球'&&me.hasDyson){html+=`<p class="warning">你已拥有戴森球，每个文明限造一个。</p><button class="btn btn-primary" disabled>建造</button>`}
+    else{html+=`<p style="font-size:12px;color:#94a3b8;margin-bottom:10px">建造后每回合开始时额外 +${card.gain} 能量${card.needStar?'（依赖恒星）':''}</p><button class="btn btn-primary" ${!playable?'disabled':''} onclick="playSelected()">建造</button>`}
+  }else if(card.type==='special'){
+    html+=`<p style="font-size:12px;color:#f87171;margin-bottom:10px"><strong>警告：</strong>启动后将弃掉所有能量和建设牌，光速飞船牌本身也会被弃掉，然后随机迁移到另一个存活星系，并清除所有指向你的打击。</p><button class="btn btn-primary" ${!playable?'disabled':''} onclick="playSelected()">启动光速飞船</button>`;
+  }else if(card.type==='plan'){
+    if(card.name==='面壁计划'){
+      html+=`<p style="font-size:12px;color:#94a3b8;margin-bottom:10px">随机获得一张广播牌（恒星/宇宙/超距广播，合作或伪装）</p>`;
+      html+=`<button class="btn btn-primary" ${!playable?'disabled':''} onclick="playSelected()">执行面壁计划</button>`;
+    }else if(card.name==='群星计划'){
+      const bcCount = me.hand.filter(c=>c.type==='broadcast').length;
+      html+=`<p style="font-size:12px;color:#94a3b8;margin-bottom:10px">获得2能源，然后随机移除一张手中的广播牌</p>`;
+      if(bcCount === 0){
+        html+=`<button class="btn btn-primary" disabled style="opacity:0.4;background:#334155;cursor:not-allowed">无法执行 - 手中无广播牌</button>`;
+      } else {
+        html+=`<button class="btn btn-primary" ${!playable?'disabled':''} onclick="playSelected()">执行群星计划</button>`;
+      }
+    }else if(card.name==='阶梯计划'){
+      const targets=Array.from({length:GALAXY_COUNT},(_,i)=>i+1).filter(g=>g!==me.galaxy&&!state.deadGalaxies.includes(g));
+      html+=`<div class="target-label">选择目标星系发送探测器（到达时间=距离）</div><div class="target-grid">`;
+      for(let g of targets){
+        const distMap=getDistances(me.galaxy);
+        const dist=distMap[g]||1;
+        const cls=['target-btn'];
+        if(state.targetGalaxy===g)cls.push('selected');
+        html+=`<button class="${cls.join(' ')}" onclick="selectTarget(${g})">${g}<span style="font-size:9px;color:#94a3b8">(${dist}回)</span></button>`;
+      }
+      html+=`</div><div class="hint-text">探测器到达后，若该星系有文明则获得5能源，无文明则无收益。其他玩家不知道发到了哪个星系。</div>`;
+      html+=`<button class="btn btn-primary" ${!state.targetGalaxy||!playable?'disabled':''} onclick="playSelected()">执行阶梯计划</button>`;
+    }
+  }
+  html+=`<button class="btn btn-ghost" onclick="discardSelected()">弃牌</button>`;
+  content.innerHTML=html;
+}
+
+function renderPlayers(){
+  const box=document.getElementById('player-list');
+  box.innerHTML='';
+  for(let p of state.players){
+    const div=document.createElement('div');
+    div.className=`player-row ${p.id===state.myId?'me':''} ${p.dead?'dead':''}`;
+
+    // 预测该文明可能位置
+    let predictedGalaxies = [];
+    if(p.id !== state.myId && !p.dead && !state.knownGalaxies.includes(p.galaxy)){
+      predictedGalaxies = predictPlayerLocation(p.id);
+    }
+
+    // 如果预测只剩一个星系，直接显示；否则按原逻辑
+    let galaxyShow;
+    if(p.id===state.myId||p.dead||state.knownGalaxies.includes(p.galaxy)){
+      galaxyShow = p.galaxy;
+    } else if(predictedGalaxies.length === 1){
+      galaxyShow = `<span style="color:#34d399">${predictedGalaxies[0]}</span>`;
+    } else {
+      galaxyShow = '?';
+    }
+
+    const blds=p.buildings.map(b=>`<span class="bld-tag">${b}</span>`).join('');
+    let status='';
+    if(p.dead)status='💀 已毁灭';
+    else if(p.defense&&p.defense.name!=='监听基地')status=`🛡️ ${p.defense.name}`;
+    else if(p.listenBase)status='👂 监听中';
+
+    // 不显示其他文明的能量
+    const energyShow = p.id === state.myId ? `⚡${p.energy}` : '⚡?';
+
+    const youTag = p.id === state.myId ? ' <span style="color:#60a5fa;font-size:11px">(你)</span>' : '';
+    div.innerHTML=`<div class="player-galaxy">🪐${galaxyShow}</div><div class="player-info"><div class="player-name">${p.name}${youTag}</div><div class="player-energy">${energyShow}</div></div><div class="player-buildings">${blds}</div><div class="player-status">${status}</div>`;
+
+    // 添加鼠标悬停事件：显示预测位置
+    if(!p.dead && p.id !== state.myId){
+      div.onmouseenter = () => {
+        const predicted = predictPlayerLocation(p.id);
+        if(predicted.length > 0){
+          highlightPredictedGalaxies(predicted);
+          // 显示预测数量提示
+          const nameEl = div.querySelector('.player-name');
+          if(nameEl) nameEl.dataset.originalText = nameEl.textContent;
+          if(nameEl){
+            if(predicted.length === 1){
+              nameEl.textContent = `${p.name} (已定位: 星系${predicted[0]})`;
+            } else {
+              nameEl.textContent = `${p.name} (预测: ${predicted.length}个星系)`;
+            }
+          }
+        }
+      };
+      div.onmouseleave = () => {
+        clearPredictedGalaxies();
+        const nameEl = div.querySelector('.player-name');
+        if(nameEl && nameEl.dataset.originalText){
+          nameEl.textContent = nameEl.dataset.originalText;
+        }
+      };
+    }
+
+    box.appendChild(div);
+  }
+}
+
+function renderThreats(){
+  const box=document.getElementById('threat-list');
+  const me=state.players[state.myId];
+  box.innerHTML='';
+  const mine=state.incomingAttacks.filter(a=>a.targetGalaxy===me.galaxy||a.targetPlayerId===me.id);
+  const others=state.incomingAttacks.filter(a=>a.targetGalaxy!==me.galaxy&&a.targetPlayerId!==me.id);
+  const all=[...mine,...others];
+  if(all.length===0){box.innerHTML='<div class="empty-state">暂无飞行中的打击</div>';return}
+  for(let atk of all){
+    const div=document.createElement('div');
+    div.className=`threat-item ${(atk.targetGalaxy===me.galaxy||atk.targetPlayerId===me.id)?'danger':''}`;
+    const turns=atk.arriveRound-state.round;
+    let destText='';
+    if(atk.techLock){destText=`→ 🪐${atk.targetGalaxy} (科技锁死)`}
+    else if(atk.isDim&&atk.targetPlayerId!==null){const tp=state.players[atk.targetPlayerId];destText=tp?`追踪 ${tp.name}`:'追踪目标'}
+    else{destText=`→ 🪐${atk.targetGalaxy}`}
+    div.innerHTML=`<span>🚀 等级${atk.level} ${destText}</span><span>${turns} 回合后到达</span>`;
+    box.appendChild(div);
+  }
+}
+
+function log(type,text){
+  state.logs.unshift({type,text,round:state.round});
+  const box=document.getElementById('log-box');
+  const div=document.createElement('div');
+  div.className=`log-entry log-${type}`;
+  div.innerHTML=`<span class="log-round">R${state.round}</span><span>${text}</span>`;
+  box.insertBefore(div,box.firstChild);
+  while(box.children.length>60)box.removeChild(box.lastChild);
+}
+
+function openModal(id){document.getElementById(id).classList.add('active')}
+function closeModal(id){document.getElementById(id).classList.remove('active')}
+
+// ==================== 调试功能 ====================
+function renderDebugPanel(){
+  const panel = document.getElementById('debug-panel');
+  if(!panel)return;
+  panel.style.display = (state.debugMode) ? 'block' : 'none';
+  // 更新当前玩家显示
+  const currentSpan = document.getElementById('debug-current-player');
+  if(currentSpan && state.players && state.players[state.myId]){
+    currentSpan.textContent = state.players[state.myId].name;
+  }
+}
+
+function debugAddEnergy(amt){
+  const me = state.players[state.myId];
+  me.energy += amt;
+  log('system', `🐛 [调试] 能量 ${amt > 0 ? '+' + amt : amt}，当前: ${me.energy}`);
+  renderStatus();renderPlayers();
+}
+
+function debugSetEnergy(amt){
+  const me = state.players[state.myId];
+  me.energy = amt;
+  log('system', `🐛 [调试] 能量设为 ${amt}`);
+  renderStatus();renderPlayers();
+}
+
+function debugAddCard(type, name, subtype){
+  const me = state.players[state.myId];
+
+  let card;
+  if(type === 'broadcast'){
+    const range = name === '恒星广播' ? 1 : (name === '宇宙广播' ? 2 : 999);
+    const cost = name === '恒星广播' ? 0 : (name === '宇宙广播' ? 1 : 2);
+    card = {type:'broadcast',name:name,cost:cost,range:range,subtype:subtype||'合作',desc:subtype==='合作'?'双方合作各+3能量':'对方合作你+5能量',uid:Math.random().toString(36).slice(2)};
+  }else if(type === 'attack'){
+    if(name === '降维打击'){
+      card = {type:'attack',name:'降维打击',cost:10,level:99,travel:1,desc:'等级∞。彻底清除目标星系及其中所有文明',uid:Math.random().toString(36).slice(2)};
+    }else if(name === '科技锁死'){
+      card = {type:'attack',name:'科技锁死',cost:4,level:0,travel:0,desc:'距离无限。弃掉目标星系玩家手中所有建造牌，不影响生存',targetGalaxy:true,techLock:true,uid:Math.random().toString(36).slice(2)};
+    }else if(name === '光粒打击'){
+      card = {type:'attack',name:'光粒打击',cost:6,level:2,travel:1,desc:'等级2。无视防御，毁灭恒星',uid:Math.random().toString(36).slice(2)};
+    }else if(name === '湮灭打击'){
+      card = {type:'attack',name:'湮灭打击',cost:8,level:3,travel:1,desc:'等级3。无视防御，毁灭恒星及建造牌',uid:Math.random().toString(36).slice(2)};
+    }else if(name === '水滴探测器'){
+      card = {type:'attack',name:'水滴探测器',cost:2,level:1,desc:'摧毁目标星系所有广播牌（包括以后获得的）',uid:Math.random().toString(36).slice(2)};
+    }else if(name === '咒语'){
+      card = {type:'attack',name:'咒语',cost:5,level:0,desc:'公布一个星系坐标，若2回合内被打击则双方获益',uid:Math.random().toString(36).slice(2)};
+    }else{
+      card = {type:'attack',name:'热核打击',cost:4,level:1,travel:1,desc:'等级1。可摧毁掩体星环',breaksMask:true,uid:Math.random().toString(36).slice(2)};
+    }
+  }else if(type === 'defense'){
+    if(name === '掩体星环'){
+      card = {type:'defense',name:'掩体星环',cost:6,maxLevel:2,desc:'可在等级2打击中幸存（热核可破）',uid:Math.random().toString(36).slice(2)};
+    }else if(name === '监听基地'){
+      card = {type:'defense',name:'监听基地',cost:2,desc:'下回合收到广播后可不作回应',uid:Math.random().toString(36).slice(2)};
+    }else{
+      card = {type:'defense',name:'量子幽灵',cost:8,maxLevel:3,desc:'可在等级3及以下打击中幸存',uid:Math.random().toString(36).slice(2)};
+    }
+  }else if(type === 'building'){
+    if(name === '戴森球'){
+      card = {type:'building',name:'戴森球',cost:6,gain:3,needStar:true,unique:true,desc:'每回合+3能量，依赖恒星，唯一',uid:Math.random().toString(36).slice(2)};
+    }else if(name === '聚变反应堆'){
+      card = {type:'building',name:'聚变反应堆',cost:3,gain:1,desc:'每回合+1能量',uid:Math.random().toString(36).slice(2)};
+    }else if(name === '反物质引擎'){
+      card = {type:'building',name:'反物质引擎',cost:6,gain:2,desc:'每回合+2能量',uid:Math.random().toString(36).slice(2)};
+    }else{
+      card = {type:'building',name:'太阳能阵列',cost:2,gain:1,needStar:true,desc:'每回合+1能量，依赖恒星',uid:Math.random().toString(36).slice(2)};
+    }
+  }else if(type === 'special'){
+    card = {type:'special',name:'光速飞船',cost:10,desc:'弃掉所有能量和建设牌，随机迁移星系，此牌也弃掉',uid:Math.random().toString(36).slice(2)};
+  }else if(type === 'plan'){
+    if(name === '面壁计划'){
+      card = {type:'plan',name:'面壁计划',cost:1,desc:'获得一张随机广播牌（恒星/宇宙/超距）',uid:Math.random().toString(36).slice(2)};
+    }else if(name === '群星计划'){
+      card = {type:'plan',name:'群星计划',cost:0,desc:'获得2能源，并随机移除一张广播牌',uid:Math.random().toString(36).slice(2)};
+    }else if(name === '阶梯计划'){
+      card = {type:'plan',name:'阶梯计划',cost:3,desc:'选择星系后发送，到达后若有文明则获得5能源',uid:Math.random().toString(36).slice(2)};
+    }
+  }
+
+  if(card){
+    me.hand.push(card);
+    log('system', `🐛 [调试] 添加卡牌: ${card.name}${card.subtype?'('+card.subtype+')':''}`);
+    renderHand();
+  }
+}
+
+function debugKillAllAI(){
+  for(let p of state.players){
+    if(p.ai && !p.dead){
+      killPlayer(p.id, '被调试消灭', null);
+    }
+  }
+  log('system', '🐛 [调试] 已消灭所有AI文明');
+  renderAll();
+}
+
+function debugRevealAll(){
+  for(let p of state.players){
+    if(!state.knownGalaxies.includes(p.galaxy)){
+      state.knownGalaxies.push(p.galaxy);
+    }
+  }
+  log('system', '🐛 [调试] 已揭示所有星系位置');
+  renderMap();
+  renderPlayers();
+}
+
+function debugSkipRound(){
+  for(let i=0;i<10;i++){
+    state.round++;
+    processAttacks();
+    buildingIncome();
+    for(let p of state.players){p.listenBase=false;if(!p.dead)drawToFour(p)}
+  }
+  log('system', '🐛 [调试] 跳过10回合');
+  renderAll();
+}
+
+function debugSwitchPlayer(pid){
+  if(!state.players[pid] || state.players[pid].dead){
+    log('system', `🐛 [调试] 无法切换到玩家${pid}：不存在或已死亡`);
+    return;
+  }
+
+  const oldId = state.myId;
+  const oldName = state.players[oldId].name;
+  const oldGalaxy = state.players[oldId].galaxy;
+
+  // 切换前重置选择状态
+  state.selectedCard=null;
+  state.targetGalaxy=null;
+  state.targetPlayerId=null;
+
+  state.myId = pid;
+  const newName = state.players[pid].name;
+  const newGalaxy = state.players[pid].galaxy;
+
+  // 同步更新 knownGalaxies：移除旧玩家的星系（除非已死亡），添加新玩家的星系
+  if(!state.players[oldId].dead && state.knownGalaxies.includes(oldGalaxy)){
+    const idx = state.knownGalaxies.indexOf(oldGalaxy);
+    if(idx >= 0) state.knownGalaxies.splice(idx, 1);
+  }
+  if(!state.knownGalaxies.includes(newGalaxy)){
+    state.knownGalaxies.push(newGalaxy);
+  }
+
+  // 原玩家恢复为AI，新玩家设为非AI
+  state.players[pid].ai = false;
+  if(oldId !== pid){
+    state.players[oldId].ai = true;
+  }
+
+  log('system', `🐛 [调试] 切换角色：${oldName} → ${newName}`);
+  document.getElementById('debug-current-player').textContent = newName;
+  renderAll();
+}
+
+function debugShowState(){
+  console.log('=== GAME STATE ===');
+  console.log(JSON.stringify(state, (key, value) => {
+    if(key === 'deck') return `[Deck: ${value.length} cards]`;
+    if(key === 'hand' && Array.isArray(value)) return `[Hand: ${value.length} cards]`;
+    return value;
+  }, 2));
+  log('system', '🐛 [调试] state已打印到浏览器控制台 (按F12查看)');
+}
+
+function debugToggleAIPause(){
+  state.aiPaused = !state.aiPaused;
+  const btn = document.getElementById('btn-pause-ai');
+  if(state.aiPaused){
+    log('system', '🐛 [调试] AI思考已暂停，全程由玩家操纵');
+    if(btn){
+      btn.textContent = '▶️ 恢复AI思考';
+      btn.style.background = '#059669';
+    }
+  } else {
+    log('system', '🐛 [调试] AI思考已恢复');
+    if(btn){
+      btn.textContent = '⏸️ 暂停AI思考';
+      btn.style.background = '#2563eb';
+    }
+  }
+}
+
+function debugClearLog(){
+  state.logs = [];
+  document.getElementById('log-box').innerHTML = '';
+  log('system', '🐛 [调试] 日志已清空');
+}
+
+// ==================== 牌堆动画 ====================
+function animateMainDeck(){
+  const box = document.getElementById('main-deck-anim');
+  if(!box)return;
+  box.classList.add('dealing');
+  setTimeout(()=>box.classList.remove('dealing'), 1200);
+}
+
+function animateGalaxyDeck(){
+  const box = document.getElementById('galaxy-deck-anim');
+  if(!box)return;
+  box.classList.add('dealing');
+  setTimeout(()=>box.classList.remove('dealing'), 1200);
+}
+
+// ==================== 飞牌动画：从主牌堆飞到我的手牌 ====================
+function flyCardToHand(cardType, cardIcon, onComplete){
+  const deckStack = document.getElementById('main-deck-stack');
+  const handBox = document.getElementById('hand-box');
+  const container = document.getElementById('flying-card-container');
+  if(!deckStack || !handBox || !container){if(onComplete)onComplete();return;}
+
+  const deckRect = deckStack.getBoundingClientRect();
+  const handRect = handBox.getBoundingClientRect();
+
+  const card = document.createElement('div');
+  card.className = 'flying-card';
+  card.innerHTML = cardIcon;
+  // 初始位置在牌堆中心，完全透明
+  card.style.left = (deckRect.left + deckRect.width/2 - 26) + 'px';
+  card.style.top = (deckRect.top + deckRect.height/2 - 38) + 'px';
+  card.style.opacity = '0';
+  container.appendChild(card);
+
+  requestAnimationFrame(()=>{
+    // 第一阶段：从牌堆飞出，逐渐显现（0→1秒）
+    card.style.transition = 'all 0.3s ease-out';
+    // 飞行到中间位置时变为可见
+    const midX = deckRect.left + (handRect.left - deckRect.left) * 0.3;
+    const midY = deckRect.top + (handRect.top - deckRect.top) * 0.3;
+    card.style.left = midX + 'px';
+    card.style.top = midY + 'px';
+    card.style.opacity = '1';
+    card.style.transform = 'scale(1)';
+  });
+
+  // 第二阶段：继续飞行到手牌区（0.3秒后）
+  setTimeout(()=>{
+    requestAnimationFrame(()=>{
+      card.style.transition = 'all 0.3s ease-out';
+      const targetX = handRect.left + handRect.width/2 - 26;
+      const targetY = handRect.top + handRect.height/2 - 38;
+      card.style.left = targetX + 'px';
+      card.style.top = targetY + 'px';
+      card.style.transform = 'scale(0.8)';
+      card.style.opacity = '1';
+    });
+  }, 300);
+
+  // 第三阶段：到达手牌区后渐变消失（0.6秒后）
+  setTimeout(()=>{
+    requestAnimationFrame(()=>{
+      card.style.transition = 'all 0.2s ease-out';
+      card.style.opacity = '0';
+      card.style.transform = 'scale(0.6)';
+    });
+  }, 600);
+
+  // 最终移除（0.8秒后）
+  setTimeout(()=>{
+    card.remove();
+    if(onComplete)onComplete();
+  }, 800);
+}
+
+// ==================== 六边形星系抽奖动画 ====================
+function hexGalaxyLottery(excludeGalaxies, onComplete){
+  try {
+    const spinner = document.getElementById('hex-spinner-overlay');
+    const grid = document.getElementById('galaxy-deck-grid');
+    const center = document.getElementById('hex-center-overlay');
+    const overlay = document.getElementById('galaxy-lottery-overlay');
+    if(!spinner || !overlay){
+      if(onComplete) onComplete(1);
+      return;
+    }
+    // 安全访问 state.deadGalaxies（初始化阶段可能未定义）
+    const deadGalaxies = (typeof state !== 'undefined' && state && state.deadGalaxies) ? state.deadGalaxies : [];
+    const available = [];
+    for(let g=1; g<=GALAXY_COUNT; g++){
+      if(!excludeGalaxies.includes(g) && !deadGalaxies.includes(g)){
+        available.push(g);
+      }
+    }
+    if(available.length === 0){
+      if(onComplete) onComplete(1);
+      return;
+    }
+
+    const targetGal = available[Math.floor(Math.random()*available.length)];
+
+    // 显示六边形转盘
+    overlay.style.display = 'flex';
+    spinner.style.display = 'flex';
+    if(center) center.style.display = 'flex';
+    if(center) center.textContent = '?';
+
+    // 布局六边形细胞
+    const cells = spinner.querySelectorAll('.hex-cell');
+    const radius = 70;
+    const centerX = 90;
+    const centerY = 90;
+
+    cells.forEach((cell, i)=>{
+      const g = i+1;
+      const angle = (i * 40 - 90) * Math.PI / 180;
+      const x = centerX + radius * Math.cos(angle) - 18;
+      const y = centerY + radius * Math.sin(angle) - 18;
+      cell.style.left = x + 'px';
+      cell.style.top = y + 'px';
+      cell.classList.remove('active','locked');
+      if(excludeGalaxies.includes(g)){
+        cell.style.opacity = '0.2';
+        cell.style.pointerEvents = 'none';
+      }else{
+        cell.style.opacity = '1';
+        cell.style.pointerEvents = 'auto';
+      }
+    });
+
+    // 开始旋转动画
+    const ring = spinner.querySelector('.hex-ring');
+    if(ring){
+      ring.style.animation = 'hexSpin 0.3s linear infinite';
+    }
+
+    // 轮流高亮
+    let currentIdx = 0;
+    let highlightInterval = setInterval(()=>{
+      cells.forEach(c=>c.classList.remove('active'));
+      const validCells = Array.from(cells).filter((c,i)=>!excludeGalaxies.includes(i+1));
+      if(validCells.length > 0){
+        currentIdx = (currentIdx + 1) % validCells.length;
+        validCells[currentIdx].classList.add('active');
+      }
+    }, 150);
+
+    // 标记是否已被跳过
+    let isSkipped = false;
+
+    // 点击跳过函数
+    function skipLottery(e){
+      // 只有覆盖层显示时才响应点击（避免开始界面误触）
+      if(overlay.style.display !== 'flex' || isSkipped) return;
+      // 只有左键点击才跳过
+      if(e && e.button !== 0) return;
+      isSkipped = true;
+      // 清除定时器和动画
+      clearTimeout(stopTimeout);
+      clearInterval(highlightInterval);
+      // 立即显示结果
+      cells.forEach(c=>c.classList.remove('active'));
+      const targetCell = Array.from(cells).find(c=>parseInt(c.dataset.g)===targetGal);
+      if(targetCell) targetCell.classList.add('locked');
+      if(center) center.textContent = targetGal;
+      if(ring) ring.style.animation = 'none';
+      highlightGalaxyNode(targetGal);
+      // 停留0.8秒后添加消失动画
+      setTimeout(()=>{
+        spinner.classList.add('fading');
+      }, 800);
+      // 延迟后关闭并回调
+      setTimeout(()=>{
+        overlay.style.display = 'none';
+        spinner.style.display = 'none';
+        spinner.classList.remove('fading');
+        if(grid) grid.style.display='grid';
+        if(targetCell) targetCell.classList.remove('locked');
+        unhighlightGalaxyNode(targetGal);
+        document.removeEventListener('click', skipLottery);
+        if(onComplete) onComplete(targetGal);
+      }, 400);
+    }
+
+    // 绑定点击跳过（使用capture确保在按钮点击前捕获）
+    document.addEventListener('click', skipLottery, true);
+
+    // 2.5秒后自动停止
+    let stopTimeout = setTimeout(()=>{
+      try {
+        if(isSkipped) return; // 已被跳过则不再执行
+        clearInterval(highlightInterval);
+        cells.forEach(c=>c.classList.remove('active'));
+        const targetCell = Array.from(cells).find(c=>parseInt(c.dataset.g)===targetGal);
+        if(targetCell) targetCell.classList.add('locked');
+        if(center) center.textContent = targetGal;
+        if(ring) ring.style.animation = 'none';
+        highlightGalaxyNode(targetGal);
+
+        // 停留0.8秒后添加消失动画
+        setTimeout(()=>{
+          spinner.classList.add('fading');
+        }, 800);
+        setTimeout(()=>{
+          overlay.style.display = 'none';
+          spinner.style.display = 'none';
+          spinner.classList.remove('fading');
+          if(grid) grid.style.display='grid';
+          if(targetCell) targetCell.classList.remove('locked');
+          unhighlightGalaxyNode(targetGal);
+          document.removeEventListener('click', skipLottery);
+          if(onComplete) onComplete(targetGal);
+        }, 400);
+      } catch(e) {
+        console.error('hexGalaxyLottery cleanup error:', e);
+        overlay.style.display = 'none';
+        spinner.style.display = 'none';
+        document.removeEventListener('click', skipLottery);
+        if(onComplete) onComplete(targetGal || 1);
+      }
+    }, 2500);
+  } catch(e) {
+    console.error('hexGalaxyLottery fatal error:', e);
+    const spinner = document.getElementById('hex-spinner-overlay');
+    const overlay = document.getElementById('galaxy-lottery-overlay');
+    if(overlay) overlay.style.display = 'none';
+    if(spinner) spinner.style.display = 'none';
+    if(onComplete) onComplete(1);
+  }
+}
+
+function highlightGalaxyNode(gnum){
+  const nodes = document.querySelectorAll('.galaxy-node');
+  nodes.forEach(node=>{
+    const text = node.querySelector('text');
+    if(text && parseInt(text.textContent)===gnum){
+      const circle = node.querySelector('circle');
+      if(circle){
+        circle.style.transition = 'all 0.5s';
+        circle.style.fill = '#1e3a5f';
+        circle.style.stroke = '#60a5fa';
+        circle.style.strokeWidth = '4';
+        circle.style.filter = 'drop-shadow(0 0 15px rgba(96,165,250,.8))';
+      }
+    }
+  });
+}
+
+function unhighlightGalaxyNode(gnum){
+  const nodes = document.querySelectorAll('.galaxy-node');
+  nodes.forEach(node=>{
+    const text = node.querySelector('text');
+    if(text && parseInt(text.textContent)===gnum){
+      const circle = node.querySelector('circle');
+      if(circle){
+        circle.style.fill = '';
+        circle.style.stroke = '';
+        circle.style.strokeWidth = '';
+        circle.style.filter = '';
+      }
+    }
+  });
+}
+
+// ==================== 火箭摧毁星系动画 ====================
+function animateRocketAttack(fromGal, toGal, onComplete){
+  const container = document.getElementById('flying-card-container');
+  if(!container){if(onComplete)onComplete();return;}
+
+  // 获取源星系和目标星系的位置
+  const fromNode = findGalaxyNode(fromGal);
+  const toNode = findGalaxyNode(toGal);
+  if(!fromNode || !toNode){if(onComplete)onComplete();return;}
+
+  const fromRect = fromNode.getBoundingClientRect();
+  const toRect = toNode.getBoundingClientRect();
+
+  // 创建火箭
+  const rocket = document.createElement('div');
+  rocket.className = 'flying-rocket';
+  rocket.textContent = '🚀';
+  rocket.style.left = (fromRect.left + fromRect.width/2 - 12) + 'px';
+  rocket.style.top = (fromRect.top + fromRect.height/2 - 12) + 'px';
+  container.appendChild(rocket);
+
+  // 计算飞行角度
+  const dx = toRect.left - fromRect.left;
+  const dy = toRect.top - fromRect.top;
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  // 火箭旋转对准目标
+  rocket.style.transform = `rotate(${angle}deg)`;
+
+  // 计算飞行距离和时间
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  const duration = Math.min(dist / 300, 1.5); // 速度控制
+
+  // 飞行动画
+  rocket.style.transition = `all ${duration}s cubic-bezier(0.25, 0.1, 0.25, 1)`;
+
+  requestAnimationFrame(()=>{
+    rocket.style.left = (toRect.left + toRect.width/2 - 12) + 'px';
+    rocket.style.top = (toRect.top + toRect.height/2 - 12) + 'px';
+  });
+
+  // 到达后爆炸
+  setTimeout(()=>{
+    rocket.remove();
+
+    // 爆炸效果
+    const explosion = document.createElement('div');
+    explosion.style.position = 'fixed';
+    explosion.style.left = (toRect.left + toRect.width/2 - 30) + 'px';
+    explosion.style.top = (toRect.top + toRect.height/2 - 30) + 'px';
+    explosion.style.width = '60px';
+    explosion.style.height = '60px';
+    explosion.style.borderRadius = '50%';
+    explosion.style.background = 'radial-gradient(circle, rgba(248,113,113,.8) 0%, rgba(127,29,29,0) 70%)';
+    explosion.style.zIndex = '10001';
+    explosion.style.animation = 'galaxyExplode .8s ease-out forwards';
+    container.appendChild(explosion);
+
+    // 屏幕震动
+    document.body.classList.add('shaking');
+
+    // 目标星系震动
+    toNode.classList.add('exploding');
+
+    // 星系牌堆中的对应卡牌变红
+    const galCard = document.querySelector(`.galaxy-card[data-g="${toGal}"]`);
+    if(galCard)galCard.classList.add('dead');
+
+    setTimeout(()=>{
+      explosion.remove();
+      document.body.classList.remove('shaking');
+      toNode.classList.remove('exploding');
+      if(onComplete)onComplete();
+    }, 800);
+  }, duration * 1000);
+}
+
+function findGalaxyNode(gnum){
+  const nodes = document.querySelectorAll('.galaxy-node');
+  for(let node of nodes){
+    const text = node.querySelector('text');
+    if(text && parseInt(text.textContent)===gnum){
+      return node;
+    }
+  }
+  return null;
+}
+
+// ==================== 打出飞牌到星图动画 ====================
+function flyCardToGalaxy(card, fromRect, onComplete){
+  const container = document.getElementById('flying-card-container');
+  if(!container){if(onComplete)onComplete();return;}
+
+  // 获取SVG星图的位置
+  const svg = document.getElementById('galaxy-svg');
+  const svgRect = svg ? svg.getBoundingClientRect() : {left:window.innerWidth/2-220, top:200, width:440, height:440};
+
+  // 随机位置在星图内（留边距）
+  const margin = 60;
+  const randomX = svgRect.left + margin + Math.random() * (svgRect.width - margin * 2);
+  const randomY = svgRect.top + margin + Math.random() * (svgRect.height - margin * 2);
+
+  // 随机旋转角度
+  const randomRotate = Math.random() * 360;
+
+  // 创建飞牌元素
+  const flyCard = document.createElement('div');
+  flyCard.className = 'flying-play-card ' + card.type;
+  const icon = {broadcast:'📡',attack:'🚀',defense:'🛡️',building:'🏗️',special:'✨',plan:'📋'}[card.type] || '?';
+  flyCard.innerHTML = `<div class="fpc-icon">${icon}</div><div class="fpc-name">${card.name}</div>`;
+
+  // 初始位置：手牌区（隐藏）
+  flyCard.style.left = (fromRect.left + fromRect.width/2 - 30) + 'px';
+  flyCard.style.top = (fromRect.top + fromRect.height/2 - 42) + 'px';
+  flyCard.style.opacity = '0';
+  flyCard.style.transform = 'scale(0.5) rotate(0deg)';
+  container.appendChild(flyCard);
+
+  // 第一阶段：飞出并显现（0.2秒）
+  requestAnimationFrame(()=>{
+    flyCard.style.transition = 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)';
+    flyCard.style.left = (fromRect.left + (randomX - fromRect.left) * 0.3 - 30) + 'px';
+    flyCard.style.top = (fromRect.top + (randomY - fromRect.top) * 0.3 - 42) + 'px';
+    flyCard.style.opacity = '1';
+    flyCard.style.transform = 'scale(1) rotate(' + (randomRotate * 0.3) + 'deg)';
+  });
+
+  // 第二阶段：飞到星图随机位置（0.3秒后）
+  setTimeout(()=>{
+    requestAnimationFrame(()=>{
+      flyCard.style.transition = 'all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)';
+      flyCard.style.left = (randomX - 30) + 'px';
+      flyCard.style.top = (randomY - 42) + 'px';
+      flyCard.style.transform = 'scale(1.1) rotate(' + randomRotate + 'deg)';
+    });
+  }, 300);
+
+  // 停留0.5秒后消失
+  setTimeout(()=>{
+    requestAnimationFrame(()=>{
+      flyCard.style.transition = 'all 0.3s ease-out';
+      flyCard.style.opacity = '0';
+      flyCard.style.transform = 'scale(0.6) rotate(' + (randomRotate + 180) + 'deg)';
+    });
+  }, 800);
+
+  // 最终移除并回调（1.1秒后）
+  setTimeout(()=>{
+    flyCard.remove();
+    if(onComplete) onComplete();
+  }, 1100);
+}
+
+// ==================== 弃牌飞牌到主牌堆动画 ====================
+function flyCardToDeck(cardType, cardName, fromRect, toRect, onComplete){
+  const container = document.getElementById('flying-card-container');
+  if(!container){if(onComplete)onComplete();return;}
+
+  const icon = {broadcast:'📡',attack:'🚀',defense:'🛡️',building:'🏗️',special:'✨',plan:'📋'}[cardType] || '?';
+  const borderColor = {broadcast:'#a78bfa',attack:'#f87171',defense:'#34d399',building:'#fbbf24',special:'#f472b6',plan:'#38bdf8'}[cardType] || '#475569';
+
+  // 创建飞牌
+  const flyCard = document.createElement('div');
+  flyCard.className = 'flying-play-card';
+  flyCard.style.width = '52px';
+  flyCard.style.height = '76px';
+  flyCard.style.border = `2px solid ${borderColor}`;
+  flyCard.style.left = (fromRect.left + fromRect.width/2 - 26) + 'px';
+  flyCard.style.top = (fromRect.top + fromRect.height/2 - 38) + 'px';
+  flyCard.style.opacity = '0';
+  flyCard.style.transform = 'scale(0.5)';
+  flyCard.innerHTML = `<div style="font-size:24px">${icon}</div>`;
+  container.appendChild(flyCard);
+
+  // 第一阶段：显现（0.2秒）
+  requestAnimationFrame(()=>{
+    flyCard.style.transition = 'all 0.2s ease-out';
+    flyCard.style.opacity = '1';
+    flyCard.style.transform = 'scale(1)';
+  });
+
+  // 第二阶段：飞向主牌堆（0.4秒后）
+  setTimeout(()=>{
+    requestAnimationFrame(()=>{
+      flyCard.style.transition = 'all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1)';
+      flyCard.style.left = (toRect.left + toRect.width/2 - 26) + 'px';
+      flyCard.style.top = (toRect.top + toRect.height/2 - 38) + 'px';
+      flyCard.style.transform = 'scale(0.6) rotate(360deg)';
+    });
+  }, 200);
+
+  // 第三阶段：消失（0.7秒后）
+  setTimeout(()=>{
+    requestAnimationFrame(()=>{
+      flyCard.style.transition = 'all 0.2s ease-out';
+      flyCard.style.opacity = '0';
+    });
+  }, 700);
+
+  // 最终移除并回调（0.9秒后）
+  setTimeout(()=>{
+    flyCard.remove();
+    if(onComplete) onComplete();
+  }, 900);
+}
+
+// ==================== 面壁计划旋转变牌动画 ====================
+function animatePlanToBroadcast(newCard, onComplete){
+  const container = document.getElementById('flying-card-container');
+  const handBox = document.getElementById('hand-box');
+  if(!container){if(onComplete)onComplete();return;}
+
+  // 获取手牌区位置作为目标
+  const handRect = handBox ? handBox.getBoundingClientRect() : {left:window.innerWidth/2, top:window.innerHeight/2, width:0, height:0};
+  const targetX = handRect.left + handRect.width/2;
+  const targetY = handRect.top + handRect.height/2;
+
+  // 屏幕中心作为起点（面壁计划牌的位置）
+  const startX = window.innerWidth / 2;
+  const startY = window.innerHeight / 2;
+
+  // 创建面壁计划牌（蓝色）
+  const planCard = document.createElement('div');
+  planCard.className = 'flying-play-card';
+  planCard.style.width = '60px';
+  planCard.style.height = '84px';
+  planCard.style.border = '2px solid #38bdf8';
+  planCard.style.left = (startX - 30) + 'px';
+  planCard.style.top = (startY - 42) + 'px';
+  planCard.style.opacity = '1';
+  planCard.innerHTML = '<div style="font-size:28px">📋</div><div style="font-size:10px;color:#e2e8f0">面壁计划</div>';
+  container.appendChild(planCard);
+
+  // 第一阶段：旋转并缩小（0.4秒）
+  requestAnimationFrame(()=>{
+    planCard.style.transition = 'all 0.4s ease-in-out';
+    planCard.style.transform = 'rotateY(90deg) scale(0.8)';
+    planCard.style.opacity = '0.5';
+  });
+
+  // 第二阶段：变成广播牌并旋转回来（0.4秒后）
+  setTimeout(()=>{
+    const bcIcon = newCard.subtype === '合作' ? '🤝' : '🎭';
+    const bcColor = newCard.subtype === '合作' ? '#34d399' : '#f87171';
+    const rangeText = newCard.range === 999 ? '∞' : newCard.range;
+    planCard.style.border = `2px solid ${bcColor}`;
+    planCard.innerHTML = `<div style="font-size:24px">${bcIcon}</div><div style="font-size:9px;color:#e2e8f0">${newCard.name}</div><div style="font-size:8px;color:#94a3b8">${newCard.subtype}</div>`;
+
+    requestAnimationFrame(()=>{
+      planCard.style.transition = 'all 0.4s ease-in-out';
+      planCard.style.transform = 'rotateY(0deg) scale(1)';
+      planCard.style.opacity = '1';
+    });
+  }, 400);
+
+  // 第三阶段：飞向手牌区（0.8秒后）
+  setTimeout(()=>{
+    requestAnimationFrame(()=>{
+      planCard.style.transition = 'all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1)';
+      planCard.style.left = (targetX - 30) + 'px';
+      planCard.style.top = (targetY - 42) + 'px';
+      planCard.style.transform = 'scale(0.8)';
+    });
+  }, 800);
+
+  // 第四阶段：消失（1.3秒后）
+  setTimeout(()=>{
+    requestAnimationFrame(()=>{
+      planCard.style.transition = 'all 0.2s ease-out';
+      planCard.style.opacity = '0';
+      planCard.style.transform = 'scale(0.5)';
+    });
+  }, 1300);
+
+  // 最终移除并回调（1.5秒后）
+  setTimeout(()=>{
+    planCard.remove();
+    if(onComplete) onComplete();
+  }, 1500);
+}
+
+function updateDeckCounts(){
+  const mainCount = document.getElementById('main-deck-count');
+  const galCount = document.getElementById('galaxy-deck-count');
+  const totalDeckSize = 92; // 牌组总数（广播24+攻击24+防御12+建设16+特殊4+计划12）
+  if(mainCount) mainCount.textContent = (state.deck && Array.isArray(state.deck)) ? state.deck.length + '/' + totalDeckSize : '--';
+  if(galCount) galCount.textContent = GALAXY_COUNT + ' 张';
+}
+
+// 初始化设置界面
+updateSetup();
+</script>
+</body>
+</html>
