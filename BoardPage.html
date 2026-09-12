@@ -36,6 +36,30 @@
       text-shadow: 0 0 15px cadetblue;
       font-family: Georgia, 'Times New Roman', Times, serif;
    }
+   .message-list {
+      width: 90%;
+      max-width: 600px;
+      margin: 20px auto;
+   }
+   .message-card {
+      background-color: #1a1a1a;
+      border-left: 4px solid cadetblue;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 0 2px 5px rgba(0,0,0,0.5);
+   }
+   .msg-author {
+      color: #aaa;
+      font-size: 0.9em;
+      margin-bottom: 5px;
+      font-weight: bold;
+   }
+   .msg-content{
+      color: #fff;
+      font-size: 1.1em;
+      line-height: 1.5;
+      word-wrap: break-word;
+   }
 </style>
 <title>法克西的留言板</title>
 <h1 onclick="alert('不要乱戳法克西')">法 克 西 共 和 国</h1>
@@ -43,11 +67,13 @@
 <b>
    <h1>F A X E C E republic</h1>
 </b>
-
-{% for m in messages %}
-   {{m.name}} - {{m.msg}}
-{% endfor %}
-
+<div class="message-list">
+   {% for m in messages %}
+   <div class="message-card">
+      <div class="msg-author">{{m.name}}</div> - <div class="msg-content">{{m.msg}}</div>
+   </div>
+   {% endfor %}
+</div>
 <form action="board-faxece.vercel.app" method="POST">
    <input name="name" placeholder="你的名字">
    <input name="message" placeholder="内容">
