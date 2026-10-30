@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>棋类游戏编辑器</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#13161b;color:#e6e9ef;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;font-size:14px}
+header{background:#1b1f26;border-bottom:1px solid #2a3038;padding:10px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+h1{font-size:17px;margin:0}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{padding:7px 14px;border-radius:8px;background:#252b34;border:1px solid #333b46;color:#cfd6e0;cursor:pointer}
+.tab.on{background:#2f6fed;border-color:#2f6fed;color:#fff}
+main{padding:16px;max-width:1180px;margin:0 auto}
+.card{background:#1c2129;border:1px solid #2b323d;border-radius:12px;padding:14px;margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button{background:#2b3442;color:#e6e9ef;border:1px solid #3a4452;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px}
+button:hover{background:#364154}
+button.pri{background:#2f6fed;border-color:#2f6fed;color:#fff}
+button.dgr{background:#b3383c;border-color:#b3383c;color:#fff}
+input,select{background:#141920;border:1px solid #3a4452;color:#e6e9ef;border-radius:7px;padding:6px 8px;font-size:13px}
+input[type=number]{width:60px}
+input[type=color]{width:42px;height:30px;padding:2px}
+label{display:inline-flex;gap:5px;align-items:center}
+.boardwrap{overflow:auto;padding:6px}
+.bgrid{display:grid;gap:2px;background:#0c0e12;padding:6px;border-radius:10px;width:max-content}
+.cell{width:var(--cs);height:var(--cs);background:#888;position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:calc(var(--cs)*.6);user-select:none}
+.cell.void{background:#101318!important;cursor:default}
+.cell.river{background:#6f9dbd!important}
+.cell.block{background:#3a3f47!important}
+.cell .pc{width:88%;height:88%;display:flex;align-items:center;justify-content:center;border-radius:50%;line-height:1;text-shadow:0 0 3px rgba(0,0,0,.85),0 1px 2px rgba(0,0,0,.55)}
+.cell .pc img{width:90%;height:90%;object-fit:contain;pointer-events:none}
+.cell .coord{position:absolute;top:1px;left:3px;font-size:9px;color:rgba(0,0,0,.55);pointer-events:none;font-family:monospace}
+.cell.mv{box-shadow:inset 0 0 0 3px #34d17b}
+.cell.cap{box-shadow:inset 0 0 0 3px #ef5350}
+.cell.sel{box-shadow:inset 0 0 0 3px #ffd54a}
+.cell:hover{filter:brightness(1.09)}
+.plist{display:flex;flex-direction:column;gap:6px;max-height:560px;overflow:auto}
+.pitem{display:flex;align-items:center;gap:8px;padding:7px 9px;background:#232935;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.pitem.on{border-color:#2f6fed;background:#263350}
+.ptoken{width:30px;height:30px;border-radius:50%;background:#39424f;display:flex;align-items:center;justify-content:center;font-size:19px;flex:none;text-shadow:0 0 3px rgba(0,0,0,.7)}
+.ptoken img{width:88%;height:88%;object-fit:contain}
+table{border-collapse:collapse;width:100%}
+td,th{border:1px solid #2c333d;padding:4px 6px;text-align:center}
+th{background:#222834;font-weight:600}
+td input[type=number]{width:52px}
+.icons{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;max-height:150px;overflow:auto;background:#141920;border:1px solid #2c333d;border-radius:8px;padding:6px}
+.icons span{font-size:21px;text-align:center;padding:3px;border-radius:6px;cursor:pointer}
+.icons span:hover{background:#2f6fed55}
+.hint{color:#8b95a5;font-size:12px}
+.banner{padding:10px 14px;border-radius:10px;background:#23402a;border:1px solid #3a7d44;margin-bottom:12px;font-size:15px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.banner.red{background:#462323;border-color:#7d3a3a}
+.logbox{max-height:300px;overflow:auto;background:#141920;border:1px solid #2c333d;border-radius:8px;padding:8px;font-size:12.5px;line-height:1.7}
+.pal{display:flex;flex-direction:column;align-items:center;padding:5px 7px;background:#232935;border-radius:8px;cursor:pointer;border:1px solid transparent;min-width:56px}
+.pal.on{border-color:#2f6fed;background:#263350}
+.split{display:grid;grid-template-columns:250px 1fr;gap:14px}
+.vc{width:38px;height:38px;border-radius:8px;background:#20252e;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;font-weight:700;color:#fff;border:1px solid #2c333d;user-select:none}
+.vc:hover{filter:brightness(1.25)}
+.vc-b{background:#3b6fd4}.vc-m{background:#2e9e56}.vc-c{background:#c4433f}.vc-s{background:#7a4fd4}.vc-t{background:rgba(120,140,180,.22)}
+.vc img{width:78%;height:78%;object-fit:contain}
+@media(max-width:860px){.split{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+<h1>♞ 棋类游戏编辑器</h1>
+<div class="tabs" id="tabs"></div>
+<div class="row" style="margin-left:auto">
+<button onclick="A.exportDB()">导出数据</button>
+<button onclick="document.getElementById('imp').click()">导入数据</button>
+<input type="file" id="imp" accept=".json" style="display:none" onchange="A.importDB(event)">
+<button class="dgr" onclick="A.resetDB()">恢复默认</button>
+</div>
+</header>
+<main><div id="view"></div></main>
+<script>
+"use strict";
+var LS='qipu_editor_v1';
+function $(q){return document.querySelector(q);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function uid(p){return p+'_'+Math.random().toString(36).slice(2,9);}
+function mv(dx,dy,o){o=o||{};return{dx:dx,dy:dy,repeat:!!o.r,mv:o.mv!==false,cap:!!o.cap,jump:!!o.jump,cannon:!!o.cannon,fwd:!!o.fwd,dbl:!!o.dbl,legX:o.legX||0,legY:o.legY||0,legMode:o.legMode||0};}
+
+/* ============ 方向常量 ============ */
+var ORTH=[[0,1],[0,-1],[1,0],[-1,0]];
+var DIAG=[[1,1],[1,-1],[-1,1],[-1,-1]];
+var ALL=ORTH.concat(DIAG);
+var KNIGHT=[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]];
+function slide(ds){return ds.map(function(d){return mv(d[0],d[1],{r:1,cap:1});});}
+function step(ds,o){return ds.map(function(d){return mv(d[0],d[1],o||{cap:1});});}
+function pTok(p){if(!p)return'?';if(p.img)return '<img src="'+p.img+'">';return esc(p.icon);}
+
+/* ============ 走法预设 ============ */
+var MOVE_GROUPS={
+ '上下左右 · 走吃1步':ORTH.map(function(d){return mv(d[0],d[1],{cap:1});}),
+ '上下左右 · 滑动(车)':slide(ORTH),
+ '四斜 · 走吃1步':DIAG.map(function(d){return mv(d[0],d[1],{cap:1});}),
+ '四斜 · 滑动(象)':slide(DIAG),
+ '八方 · 走吃1步(王)':ALL.map(function(d){return mv(d[0],d[1],{cap:1});}),
+ '八方 · 滑动(后)':slide(ALL),
+ '日字跳跃(马)':KNIGHT.map(function(d){return mv(d[0],d[1],{jump:1,cap:1});}),
+ '田字2步(相/象)':DIAG.map(function(d){return mv(d[0]*2,d[1]*2,{cap:1});}),
+ '炮 · 直线移动+隔一子吃':ORTH.map(function(d){return mv(d[0],d[1],{r:1});}).concat(ORTH.map(function(d){return mv(d[0],d[1],{r:1,cannon:1,cap:1,mv:false});})),
+ '兵 · 向前1步(不吃)':[mv(0,-1,{fwd:1})],
+ '兵 · 向前(首步可两格)':[mv(0,-1,{fwd:1}),mv(0,-2,{fwd:1,dbl:1}),mv(1,-1,{fwd:1,cap:1,mv:false}),mv(-1,-1,{fwd:1,cap:1,mv:false})],
+ '日字(含蹩马腿)':KNIGHT.map(function(d){return mv(d[0],d[1],{cap:1,legMode:1,legX:Math.abs(d[0])===2?d[0]/2:0,legY:Math.abs(d[1])===2?d[1]/2:0});}),
+ '田字2步(含塞象眼)':DIAG.map(function(d){return mv(d[0]*2,d[1]*2,{cap:1,legMode:1,legX:d[0],legY:d[1]});}),
+ '邻子借力跳2格(有子即可跳其后)':ALL.map(function(d){return mv(d[0]*2,d[1]*2,{cap:1,legMode:2,legX:d[0],legY:d[1]});}),
+ '兵 · 前斜吃子':[mv(1,-1,{fwd:1,cap:1,mv:false}),mv(-1,-1,{fwd:1,cap:1,mv:false})]
+};
+
+/* ============ 默认数据 ============ */
+function defaultDB(){
+  var bChess={id:uid('b'),name:'国际象棋盘 8×8',rows:8,cols:8,cells:{},ca:'#ecdcbf',cb:'#a97748',showCoords:true};
+  var bXq={id:uid('b'),name:'中国象棋盘 9×10',rows:10,cols:9,cells:{},ca:'#f2dcb8',cb:'#c99a63',showCoords:true};
+  for(var c=0;c<9;c++){bXq.cells['4,'+c]='river';bXq.cells['5,'+c]='river';}
+  var bMini={id:uid('b'),name:'迷你战场 5×5',rows:5,cols:5,cells:{},ca:'#dbe7f5',cb:'#93a9c9',showCoords:true};
+  var bBig={id:uid('b'),name:'大型棋盘 12×12',rows:12,cols:12,cells:{},ca:'#d8ead2',cb:'#8bb27e',showCoords:true};
+  var boards=[bChess,bXq,bMini,bBig];
+
+  var P=[];
+  function addP(name,icon,royal,moves){var p={id:uid('p'),name:name,icon:icon,img:'',royal:!!royal,moves:moves};P.push(p);return p;}
+  /* 国际象棋 */
+  addP('王','♚',true,step(ALL));
+  addP('后','♛',false,slide(ALL));
+  addP('车','♜',false,slide(ORTH));
+  addP('象','♝',false,slide(DIAG));
+  addP('马','♞',false,KNIGHT.map(function(d){return mv(d[0],d[1],{jump:1,cap:1});}));
+  addP('兵','♟',false,[mv(0,-1,{fwd:1}),mv(1,-1,{fwd:1,cap:1,mv:false}),mv(-1,-1,{fwd:1,cap:1,mv:false}),mv(0,-2,{fwd:1,dbl:1})]);
+  /* 中国象棋 */
+  addP('帅','帅',true,step(ORTH));
+  addP('仕','仕',false,step(DIAG));
+  addP('相','相',false,DIAG.map(function(d){return mv(d[0]*2,d[1]*2,{cap:1,legMode:1,legX:d[0],legY:d[1]});}));
+  addP('炮','炮',false,ORTH.map(function(d){return mv(d[0],d[1],{r:1});}).concat(ORTH.map(function(d){return mv(d[0],d[1],{r:1,cannon:1,cap:1,mv:false});})));
+  addP('馬','♞',false,KNIGHT.map(function(d){return mv(d[0],d[1],{cap:1,legMode:1,legX:Math.abs(d[0])===2?d[0]/2:0,legY:Math.abs(d[1])===2?d[1]/2:0});}));
+  addP('卒','卒',false,[mv(0,-1,{fwd:1,cap:1}),mv(1,0,{cap:1}),mv(-1,0,{cap:1})]);
+  /* 趣味棋子 */
+  addP('龙','🐉',false,slide(ALL).concat(KNIGHT.map(function(d){return mv(d[0],d[1],{jump:1,cap:1});})));
+  addP('刺客','🗡️',false,step(DIAG).concat(KNIGHT.map(function(d){return mv(d[0],d[1],{jump:1,cap:1});})));
+  addP('巨人','🦣',false,ORTH.map(function(d){return mv(d[0],d[1],{jump:1,cap:1});}).concat(DIAG.map(function(d){return mv(d[0],d[1],{jump:1,cap:1});})));
+  function findP(n){for(var i=0;i<P.length;i++)if(P[i].name===n)return P[i];return null;}/*棋子总数校验*/
+
+  /* 国际象棋对局 */
+  var setupC=[];
+  var back=['车','马','象','后','王','象','马','车'];
+  back.forEach(function(n,cc){setupC.push({pid:findP(n).id,r:0,c:cc,side:1});setupC.push({pid:findP(n).id,r:7,c:cc,side:0});});
+  for(var i=0;i<8;i++){setupC.push({pid:findP('兵').id,r:1,c:i,side:1});setupC.push({pid:findP('兵').id,r:6,c:i,side:0});}
+  var gChess={id:uid('g'),name:'国际象棋(标准)',boardId:bChess.id,colors:['白方','黑方'],hex:['#f5f5f5','#23272f'],win:'captureKing',first:0,setup:setupC};
+
+  /* 中国象棋对局 */
+  var setupX=[];
+  var bx='车馬相仕帅仕相相馬车';
+  for(var j=0;j<9;j++){setupX.push({pid:findP(bx[j]).id,r:0,c:j,side:1});setupX.push({pid:findP(bx[j]).id,r:9,c:j,side:0});}
+  [1,7].forEach(function(cc){setupX.push({pid:findP('炮').id,r:2,c:cc,side:1});setupX.push({pid:findP('炮').id,r:7,c:cc,side:0});});
+  [0,2,4,6,8].forEach(function(cc){setupX.push({pid:findP('卒').id,r:3,c:cc,side:1});setupX.push({pid:findP('卒').id,r:6,c:cc,side:0});});
+  var gXq={id:uid('g'),name:'中国象棋(标准)',boardId:bXq.id,colors:['红方','黑方'],hex:['#e04545','#22262e'],win:'captureKing',first:0,setup:setupX};
+
+  /* 迷你对局 */
+  var setupM=[
+    {pid:findP('王').id,r:0,c:2,side:1},{pid:findP('车').id,r:0,c:0,side:1},{pid:findP('车').id,r:0,c:4,side:1},
+    {pid:findP('兵').id,r:1,c:1,side:1},{pid:findP('兵').id,r:1,c:3,side:1},
+    {pid:findP('王').id,r:4,c:2,side:0},{pid:findP('车').id,r:4,c:0,side:0},{pid:findP('车').id,r:4,c:4,side:0},
+    {pid:findP('兵').id,r:3,c:1,side:0},{pid:findP('兵').id,r:3,c:3,side:0}];
+  var gMini={id:uid('g'),name:'迷你对战 5×5',boardId:bMini.id,colors:['红方','蓝方'],hex:['#ff6b81','#4d9fff'],win:'captureKing',first:0,setup:setupM};
+
+  return {boards:boards,pieces:P,games:[gChess,gXq,gMini]};
+}
+
+/* ============ 存取 ============ */
+var DB=null;
+try{DB=JSON.parse(localStorage.getItem(LS));}catch(e){DB=null;}
+if(!DB||!DB.boards||!DB.pieces||!DB.games)DB=defaultDB();
+if(!DB.v||DB.v<2){DB.pieces.forEach(function(p){if(p.name==='兵'&&!p.moves.some(function(m){return m.dbl;}))p.moves.push(mv(0,-2,{fwd:1,dbl:1}));});DB.v=2;}
+if(DB.v<3){
+  DB.pieces.forEach(function(p){
+    if(p.name==='相')p.moves.forEach(function(m){if(Math.abs(m.dx)===2&&Math.abs(m.dy)===2&&!m.legMode){m.legMode=1;m.legX=m.dx/2;m.legY=m.dy/2;}});
+    p.moves.forEach(function(m){if(m.legMode===undefined)m.legMode=0;if(m.legX===undefined)m.legX=0;if(m.legY===undefined)m.legY=0;});
+  });
+  if(!DB.pieces.some(function(p){return p.name==='馬';})){
+    var ma={id:uid('p'),name:'馬',icon:'♞',img:'',royal:false,moves:KNIGHT.map(function(d){return mv(d[0],d[1],{cap:1,legMode:1,legX:Math.abs(d[0])===2?d[0]/2:0,legY:Math.abs(d[1])===2?d[1]/2:0});})};
+    DB.pieces.push(ma);
+    var oldMa=null;DB.pieces.forEach(function(p){if(p.name==='马')oldMa=p;});
+    if(oldMa)DB.games.forEach(function(g){if(g.name.indexOf('中国象棋')===0)g.setup.forEach(function(s){if(s.pid===oldMa.id)s.pid=ma.id;});});
+  }
+  DB.v=3;saveDB();
+}
+function saveDB(){try{localStorage.setItem(LS,JSON.stringify(DB));}catch(e){console.warn('保存失败(可能图片过大)',e);}}
+
+var cur={tab:'board',boardId:DB.boards[0].id,pieceId:DB.pieces[0].id,gameId:DB.games[0].id};
+var placeSel={pid:null,side:0,erase:false};
+var T=null;
+
+function curB(){for(var i=0;i<DB.boards.length;i++)if(DB.boards[i].id===cur.boardId)return DB.boards[i];return DB.boards[0];}
+function curP(){for(var i=0;i<DB.pieces.length;i++)if(DB.pieces[i].id===cur.pieceId)return DB.pieces[i];return DB.pieces[0];}
+function curG(){for(var i=0;i<DB.games.length;i++)if(DB.games[i].id===cur.gameId)return DB.games[i];return DB.games[0];}
+
+/* ============ 棋盘渲染基础 ============ */
+function cellBase(b,r,c){
+  var t=b.cells[r+','+c];
+  if(t==='block')return{cls:'block',style:''};
+  if(t==='void')return{cls:'void',style:''};
+  if(t==='river')return{cls:'river',style:''};
+  return{cls:'',style:'background:'+((r+c)%2?b.cb:b.ca)};
+}
+function coordTxt(b,r,c){
+  if(!b.showCoords)return '';
+  return '<span class="coord">'+String.fromCharCode(97+c)+(b.rows-r)+'</span>';
+}
+function boardGrid(b,inner,cs){
+  cs=cs||Math.max(26,Math.min(52,Math.floor(760/b.cols)));
+  var h='<div class="bgrid" style="--cs:'+cs+'px;grid-template-columns:repeat('+b.cols+',var(--cs))">';
+  for(var r=0;r<b.rows;r++)for(var c=0;c<b.cols;c++)h+=inner(r,c);
+  return h+'</div>';
+}
+
+/* ============ 走法生成 ============ */
+function genMoves(board,on,r,c,pt,side,moved){var movedFlag=!!moved;
+  var res=[];
+  function occ(rr,cc){for(var i=0;i<on.length;i++)if(on[i].r===rr&&on[i].c===cc)return on[i];return null;}
+  for(var k=0;k<pt.moves.length;k++){
+    var m=pt.moves[k];
+    var dy=m.fwd?(side===0?m.dy:-m.dy):m.dy, dx=m.dx;
+    if(m.legMode){
+      var lr=r+(m.legY||0),lc=c+(m.legX||0);
+      var lp=(lr>=0&&lc>=0&&lr<board.rows&&lc<board.cols)?occ(lr,lc):null;
+      if(m.legMode===1&&lp)continue;
+      if(m.legMode===2&&!lp)continue;
+      if(m.legMode===3&&!(lp&&lp.side===side))continue;
+      if(m.legMode===4&&!(lp&&lp.side!==side))continue;
+    }
+    if(m.cannon){
+      var screen=0,st=1;
+      while(st<=40){
+        var rr=r+dy*st,cc=c+dx*st;
+        if(rr<0||cc<0||rr>=board.rows||cc>=board.cols)break;
+        var ct=board.cells[rr+','+cc];if(ct==='block'||ct==='void')break;
+        var o=occ(rr,cc);
+        if(!o){if(screen===0&&m.mv)res.push({r:rr,c:cc,cap:false});}
+        else{screen++;if(screen===2){if(o.side!==side&&m.cap)res.push({r:rr,c:cc,cap:true});break;}}
+        st++;
+      }
+      continue;
+    }
+    var step=1;
+    while(step<=40){
+      var r2=r+dy*step,c2=c+dx*step;
+      if(r2<0||c2<0||r2>=board.rows||c2>=board.cols)break;
+      var ct2=board.cells[r2+','+c2];if(ct2==='block'||ct2==='void')break;
+      if(m.dbl&&movedFlag)break;
+      if(m.dbl&&dx%2===0&&dy%2===0&&occ(r+dy/2,c+dx/2))break;
+      var o2=occ(r2,c2);
+      if(o2){
+        if(o2.side!==side&&m.cap)res.push({r:r2,c:c2,cap:true});
+        if(m.jump){step++;continue;}
+        break;
+      }
+      if(m.mv)res.push({r:r2,c:c2,cap:false});
+      if(m.dbl)break;
+      if(!m.repeat)break;
+      step++;
+    }
+  }
+  return res;
+}
+
+/* ============ 视图：棋盘编辑 ============ */
+function vBoard(){
+  var b=curB();cur.boardId=b.id;
+  var opts=DB.boards.map(function(x){return '<option value="'+x.id+'" '+(x.id===b.id?'selected':'')+'>'+esc(x.name)+'</option>';}).join('');
+  var h='<div class="card"><div class="row">'
+   +'<label>棋盘预设 <select onchange="A.bSel(this.value)">'+opts+'</select></label>'
+   +'<button class="pri" onclick="A.bNew()">＋ 新建棋盘</button>'
+   +'<button onclick="A.bDup()">复制</button>'
+   +'<button class="dgr" onclick="A.bDel()">删除此棋盘</button></div></div>';
+  h+='<div class="card"><div class="row">'
+   +'<label>名称 <input value="'+esc(b.name)+'" onchange="A.bSet(\'name\',this.value)"></label>'
+   +'<label>行数 <input type="number" min="2" max="19" value="'+b.rows+'" id="bRows"></label>'
+   +'<label>列数 <input type="number" min="2" max="19" value="'+b.cols+'" id="bCols"></label>'
+   +'<button onclick="A.bResize()">应用尺寸</button>'
+   +'<label>浅色格 <input type="color" value="'+b.ca+'" onchange="A.bSet(\'ca\',this.value)"></label>'
+   +'<label>深色格 <input type="color" value="'+b.cb+'" onchange="A.bSet(\'cb\',this.value)"></label>'
+   +'<label><input type="checkbox" '+(b.showCoords?'checked':'')+' onchange="A.bSet(\'showCoords\',this.checked)"> 显示坐标</label>'
+   +'</div><div class="row" style="margin-top:8px"><span class="hint">点击格子循环切换类型：</span>'
+   +'<span class="chip">正常</span><span class="chip">🚫 障碍</span><span class="chip">⬛ 虚空(不可走入)</span><span class="chip">🌊 河道(可通行)</span>'
+   +'</div></div>';
+  h+='<div class="card boardwrap">'+boardGrid(b,function(r,c){
+    var cb=cellBase(b,r,c);
+    return '<div class="cell '+cb.cls+'" style="'+cb.style+'" onclick="A.bCell('+r+','+c+')">'+coordTxt(b,r,c)+'</div>';
+  })+'</div>';
+  $('#view').innerHTML=h;
+}
+
+/* ============ 视图：棋子编辑 ============ */
+/* ============ 走法演示板 ============ */
+var PD=null;
+function pdPrefill(p){
+  var arr=[];
+  var leg=p.moves.find(function(m){return m.legMode>0;});
+  var hasCannon=p.moves.some(function(m){return m.cannon;});
+  var hasJump=p.moves.some(function(m){return m.jump;});
+  var hasDbl=p.moves.some(function(m){return m.dbl;});
+  if(hasCannon)arr=[{r:3,c:2,side:0},{r:3,c:1,side:1}];
+  else if(leg)arr=[{r:3+leg.legY,c:3+leg.legX,side:0},{r:3+leg.dy,c:3+leg.dx,side:1}];
+  else if(hasJump)arr=[{r:4,c:3,side:0},{r:5,c:2,side:1}];
+  else if(hasDbl)arr=[{r:3,c:2,side:1}];
+  else arr=[{r:2,c:2,side:1},{r:3,c:2,side:0},{r:4,c:4,side:1}];
+  return arr.filter(function(o){return o.r>=0&&o.r<7&&o.c>=0&&o.c<7&&!(o.r===3&&o.c===3);});
+}
+function vDemo(p){
+  if(!PD||PD.pid!==p.id)PD={pid:p.id,on:pdPrefill(p)};
+  var board={rows:7,cols:7,cells:{}};
+  var full=[{pid:p.id,r:3,c:3,side:0,moved:false}].concat(PD.on.map(function(o){return{pid:p.id,r:o.r,c:o.c,side:o.side,moved:false};}));
+  var mvs=genMoves(board,full,3,3,p,0,false);
+  var onMap={};
+  full.forEach(function(q,i){if(i>0)onMap[q.r+','+q.c]=q;});
+  var cells='';
+  for(var r=0;r<7;r++)for(var c=0;c<7;c++){
+    var cls='',inner='';
+    for(var k=0;k<mvs.length;k++){var m=mvs[k];if(m.r===r&&m.c===c){cls+=m.cap?' cap':' mv';break;}}
+    if(r===3&&c===3){inner='<div class="pc" style="color:#4d9fff">'+pTok(p)+'</div>';cls+=' sel';}
+    else{var o=onMap[r+','+c];if(o)inner='<div class="pc" style="color:'+(o.side===1?'#d0556a':'#4d9fff')+'">'+pTok(p)+'</div>';}
+    cells+='<div class="cell'+cls+'" style="background:#232935" onclick="A.pdCell('+r+','+c+')">'+inner+'</div>';
+  }
+  return '<div class="bgrid" style="--cs:40px;grid-template-columns:repeat(7,var(--cs))">'+cells+'</div>'
+   +'<div class="hint" style="margin-top:6px;line-height:1.7">🧪 <b>走法演示</b>：点击演示盘格子循环放置：<span style="color:#d0556a">敌子</span> → <span style="color:#4d9fff">己子</span> → 移除<br>中心＝当前棋子（实时显示 <span style="color:#34d17b">可走</span> / <span style="color:#ef5350">可吃</span>，含马腿、炮架、借力跳等机制演示）</div>';
+}
+
+/* ============ 可视化走法编辑器 ============ */
+function vMoveGrid(p){
+  var GR=3,N=2*GR+1;
+  var trails={};
+  p.moves.forEach(function(m){
+    if(m.repeat&&!m.jump&&!m.cannon&&!m.fwd&&!m.dbl&&!m.legMode){
+      for(var k=2;k<=GR;k++){var xx=m.dx*k,yy=m.dy*k;if(Math.abs(xx)>GR||Math.abs(yy)>GR)break;trails[xx+','+yy]=1;}
+    }
+  });
+  var cells='';
+  for(var dy=-GR;dy<=GR;dy++)for(var dx=-GR;dx<=GR;dx++){
+    if(dx===0&&dy===0){cells+='<div class="vc" style="background:#39424f;cursor:default">'+pTok(p)+'</div>';continue;}
+    var rule=null,special=false;
+    p.moves.forEach(function(m){if(m.dx===dx&&m.dy===dy){if(m.jump||m.cannon||m.fwd||m.dbl||m.legMode)special=true;else rule=m;}});
+    var cls='',txt='',cur='cursor:pointer;';
+    if(rule){cls=(rule.mv&&rule.cap)?'vc-b':(rule.mv?'vc-m':'vc-c');txt=(rule.repeat?'∞':'')+(special?'★':'');}
+    else if(special){cls='vc-s';txt='★';cur='cursor:pointer;';}
+    else if(trails[dx+','+dy]){cls='vc-t';cur='cursor:default;';}
+    cells+='<div class="vc '+cls+'" style="'+cur+'" title="偏移 ('+dx+','+dy+')" onclick="A.vCell('+dx+','+dy+')">'+txt+'</div>';
+  }
+  return '<div class="vwrap"><div style="display:grid;grid-template-columns:repeat('+N+',38px);gap:3px">'+cells+'</div>'
+   +'<div class="hint" style="margin-top:6px;line-height:1.8">'
+   +'点击格子循环切换：<b>走吃1步</b> → <b>走吃滑动 ∞</b> → <b>仅走滑动</b> → <b>仅吃滑动</b> → 删除<br>'
+   +'紫色 <b>★</b>＝特殊规则（跳 / 炮 / 仅向前 / 首步2格 / 条件格），点击删除，细调见右侧表格<br>'
+   +'棋盘上方＝前方（第一方视角）；浅色细点＝某滑动方向可通行的后续格</div>'
+   +'<div class="row" style="margin-top:6px;font-size:12px">'
+   +'<span class="chip vc-b">走+吃</span> '
+   +'<span class="chip vc-m">仅走</span> '
+   +'<span class="chip vc-c">仅吃</span> '
+   +'<span class="chip vc-s">★ 特殊</span> '
+   +'<span class="chip">∞＝连续滑动至被挡</span></div></div>';
+}
+
+
+var ICON_GROUPS=[
+ ['国际象棋','♔♕♖♗♘♙♚♛♜♝♞♟'],
+ ['动物','🐶🐱🐭🐹🐰🦊🐻🐼🐨🐯🦁🐮🐵🐔🐧🐘🐴🐍🦅🐺🐉🦣'],
+ ['符号','⭐❤️🔥💧⚡🌙☀️🍀🌸💎👑💀🗡️🛡️🏹🎯🧨🚀🛸👻🤖'],
+ ['汉字','兵卒车马炮帅将王侯相士巫师龙骑兽妖仙魔圣帝皇'],
+ ['军棋风','司令军长师长旅长团长营长连长排长工兵地雷炸弹']
+];
+function vPiece(){
+  var p=curP();cur.pieceId=p.id;
+  var list=DB.pieces.map(function(x){
+    return '<div class="pitem '+(x.id===p.id?'on':'')+'" onclick="A.pSel(\''+x.id+'\')"><div class="ptoken">'+pTok(x)+'</div><div>'+esc(x.name)+(x.royal?' 👑':'')+'<div class="hint">'+x.moves.length+' 条规则</div></div></div>';
+  }).join('');
+  var iconHtml=ICON_GROUPS.map(function(g){
+    return '<div class="hint" style="margin:6px 0 3px">'+g[0]+'</div><div class="icons">'+[].map.call(g[1],function(ch){return '<span onclick="A.pIcon(\''+ch+'\')">'+ch+'</span>';}).join('')+'</div>';
+  }).join('');
+  var moveRows=p.moves.map(function(m,i){
+    return '<tr>'
+     +'<td><input type="number" value="'+m.dx+'" onchange="A.pMove('+i+',\'dx\',this.value)"></td>'
+     +'<td><input type="number" value="'+m.dy+'" onchange="A.pMove('+i+',\'dy\',this.value)"></td>'
+     +'<td><input type="checkbox" '+(m.repeat?'checked':'')+' onchange="A.pMove('+i+',\'repeat\',this.checked)"></td>'
+     +'<td><input type="checkbox" '+(m.mv?'checked':'')+' onchange="A.pMove('+i+',\'mv\',this.checked)"></td>'
+     +'<td><input type="checkbox" '+(m.cap?'checked':'')+' onchange="A.pMove('+i+',\'cap\',this.checked)"></td>'
+     +'<td><input type="checkbox" '+(m.jump?'checked':'')+' onchange="A.pMove('+i+',\'jump\',this.checked)"></td>'
+     +'<td><input type="checkbox" '+(m.cannon?'checked':'')+' onchange="A.pMove('+i+',\'cannon\',this.checked)"></td>'
+     +'<td><input type="checkbox" '+(m.fwd?'checked':'')+' onchange="A.pMove('+i+',\'fwd\',this.checked)"></td>'
+     +'<td><input type="checkbox" '+(m.dbl?'checked':'')+' onchange="A.pMove('+i+',\'dbl\',this.checked)"></td>'
+     +'<td style="white-space:nowrap"><input type="number" style="width:38px" value="'+m.legX+'" onchange="A.pMove('+i+',\'legX\',this.value)"><input type="number" style="width:38px" value="'+m.legY+'" onchange="A.pMove('+i+',\'legY\',this.value)"><select onchange="A.pMove('+i+',\'legMode\',this.value)">'+['无','须空','有子','有己子','有敌子'].map(function(t,mi){return '<option value="'+mi+'" '+(m.legMode===mi?'selected':'')+'>'+t+'</option>';}).join('')+'</select></td>'
+     +'<td><button class="dgr" onclick="A.pMoveDel('+i+')">×</button></td></tr>';
+  }).join('');
+  var h='<div class="split"><div class="card"><div class="row" style="margin-bottom:8px"><b>棋子列表</b></div>'
+   +'<div class="plist">'+list+'</div>'
+   +'<div class="row" style="margin-top:8px"><button class="pri" onclick="A.pNew()">＋ 新建棋子</button><button onclick="A.pDup()">复制当前棋子</button></div></div>'
+   +'<div><div class="card"><div class="row" style="margin-bottom:8px">'
+   +'<div class="ptoken" style="width:46px;height:46px;font-size:28px">'+pTok(p)+'</div>'
+   +'<label>名称 <input value="'+esc(p.name)+'" onchange="A.pSet(\'name\',this.value)"></label>'
+   +'<label><input type="checkbox" '+(p.royal?'checked':'')+' onchange="A.pSet(\'royal\',this.checked)"> 君主棋子(被吃即输)</label>'
+   +'<button class="dgr" onclick="A.pDel()">🗑 删除棋子</button></div>'
+   +'<div class="row">'
+   +'<button onclick="A.toggleIcons()">🎨 选择图标(图片预设库)</button>'
+   +'<button onclick="document.getElementById(\'pImg\').click()">🖼️ 上传本地图片</button>'
+   +(p.img?'<button onclick="A.pClearImg()">清除图片</button>':'')
+   +'<input type="file" id="pImg" accept="image/*" style="display:none" onchange="A.pUpload(event)">'
+   +'<span class="hint">上传图片后优先于文字图标显示</span></div>'
+   +'<div id="iconPanel" style="display:none;margin-top:8px">'+iconHtml+'</div></div>'
+   +'<div class="card"><div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start">'
+   +'<div><b>🎯 可视化走法编辑</b><div style="margin-top:8px">'+vMoveGrid(p)+'</div></div>'
+   +'<div><b>🧪 实时演示盘</b><div style="margin-top:8px">'+vDemo(p)+'</div></div>'
+   +'<div style="flex:1;min-width:400px"><b>明细规则表</b> <span class="hint">跳＝越子 / 炮＝隔一子吃 / 仅向前＝方向随执子方翻转 / 首步2格＝未移动可两格 / 条件格＝“有(无)棋子时才可走此方向”（马腿、象眼、借力跳等）</span>'
+   +'<div class="row" style="margin:8px 0"><select id="grpSel">'+Object.keys(MOVE_GROUPS).map(function(k){return '<option>'+k+'</option>';}).join('')+'</select>'
+   +'<button onclick="A.pAddGroup()">＋ 添加预设方向组</button>'
+   +'<button onclick="A.pAddMove()">＋ 添加单条规则</button></div>'
+   +'<table><tr><th>dx</th><th>dy</th><th>连续</th><th>走</th><th>吃</th><th>跳</th><th>炮</th><th>仅向前</th><th>首步2格</th><th>条件(X,Y,模式)</th><th></th></tr>'
+   +(moveRows||'<tr><td colspan="11" class="hint">暂无规则 —— 该棋子不能移动，可作为障碍物或目标棋子</td></tr>')+'</table></div>'
+   +'</div></div>'
+   +'</div></div>';
+  $('#view').innerHTML=h;
+}
+
+/* ============ 视图：对局设置 ============ */
+function vGame(){
+  var g=curG();cur.gameId=g.id;
+  var b=null;
+  for(var i=0;i<DB.boards.length;i++)if(DB.boards[i].id===g.boardId)b=DB.boards[i];
+  if(!b){b=DB.boards[0];g.boardId=b.id;}
+  var gamesOpts=DB.games.map(function(x){return '<option value="'+x.id+'" '+(x.id===g.id?'selected':'')+'>'+esc(x.name)+'</option>';}).join('');
+  var boardOpts=DB.boards.map(function(x){return '<option value="'+x.id+'" '+(x.id===g.boardId?'selected':'')+'>'+esc(x.name)+'</option>';}).join('');
+  var setupMap={};
+  g.setup.forEach(function(s){setupMap[s.r+','+s.c]=s;});
+  var pal=DB.pieces.map(function(p){
+    return '<div class="pal '+(placeSel.pid===p.id&&!placeSel.erase?'on':'')+'" onclick="A.gPal(\''+p.id+'\')"><div class="ptoken">'+pTok(p)+'</div><div style="font-size:11px;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</div></div>';
+  }).join('');
+  var grid=boardGrid(b,function(r,c){
+    var cb=cellBase(b,r,c),inner=coordTxt(b,r,c);
+    var s=setupMap[r+','+c];
+    if(s){var pp=null;for(var j=0;j<DB.pieces.length;j++)if(DB.pieces[j].id===s.pid)pp=DB.pieces[j];
+      inner='<div class="pc" style="color:'+g.hex[s.side]+'">'+pTok(pp)+'</div>';}
+    return '<div class="cell '+cb.cls+'" style="'+cb.style+'" onclick="A.gCell('+r+','+c+')">'+inner+'</div>';
+  });
+  var h='<div class="card"><div class="row"><label>对局预设 <select onchange="A.gSel(this.value)">'+gamesOpts+'</select></label>'
+   +'<button class="pri" onclick="A.gNew()">＋ 新建对局</button>'
+   +'<button onclick="A.gDup()">复制对局</button>'
+   +'<button class="dgr" onclick="A.gDel()">删除</button>'
+   +'<span style="flex:1"></span><button class="pri" onclick="A.tab(\'test\')">▶ 开始测试</button></div></div>';
+  h+='<div class="card"><div class="row">'
+   +'<label>名称 <input value="'+esc(g.name)+'" onchange="A.gSet(\'name\',this.value)"></label>'
+   +'<label>使用棋盘 <select onchange="A.gBoard(this.value)">'+boardOpts+'</select></label>'
+   +'<label>胜利条件 <select onchange="A.gSet(\'win\',this.value)">'
+   +'<option value="captureKing" '+(g.win==='captureKing'?'selected':'')+'>吃掉对方君主棋子</option>'
+   +'<option value="captureAll" '+(g.win==='captureAll'?'selected':'')+'>吃光对方全部棋子</option>'
+   +'<option value="reachRow" '+(g.win==='reachRow'?'selected':'')+'>有棋子抵达对方底线</option>'
+   +'</select></label>'
+   +'<label>先手 <select onchange="A.gSet(\'first\',this.value)">'
+   +'<option value="0" '+(g.first==0?'selected':'')+'>'+esc(g.colors[0])+'</option>'
+   +'<option value="1" '+(g.first==1?'selected':'')+'>'+esc(g.colors[1])+'</option>'
+   +'</select></label></div>'
+   +'<div class="row" style="margin-top:8px">'
+   +'<label>一方 <input value="'+esc(g.colors[0])+'" onchange="A.gColor(0,this.value)"></label><input type="color" value="'+g.hex[0]+'" onchange="A.gHex(0,this.value)">'
+   +'<label>二方 <input value="'+esc(g.colors[1])+'" onchange="A.gColor(1,this.value)"></label><input type="color" value="'+g.hex[1]+'" onchange="A.gHex(1,this.value)">'
+   +'<span class="hint">颜色作用于文字图标着色</span></div></div>';
+  h+='<div class="card"><b>初始布局</b> <span class="hint">①选棋子 ②选阵营 ③点击棋盘放置；擦除模式下点击移除</span>'
+   +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">'+pal+'</div>'
+   +'<div class="row" style="margin-bottom:8px">'
+   +'<button class="'+(placeSel.side===0&&!placeSel.erase?'pri':'')+'" onclick="A.gSide(0)">▶ 放入：'+esc(g.colors[0])+'</button>'
+   +'<button class="'+(placeSel.side===1&&!placeSel.erase?'pri':'')+'" onclick="A.gSide(1)">▶ 放入：'+esc(g.colors[1])+'</button>'
+   +'<button class="'+(placeSel.erase?'pri':'')+'" onclick="A.gErase()">🧽 擦除模式</button>'
+   +'<button onclick="A.gClear()">清空布局</button></div>'
+   +'<div class="boardwrap">'+grid+'</div></div>';
+  $('#view').innerHTML=h;
+}
+
+/* ============ 视图：测试对局 ============ */
+function pName(pid){for(var i=0;i<DB.pieces.length;i++)if(DB.pieces[i].id===pid)return DB.pieces[i].name;return '?';}
+function tInit(){
+  var g=curG();
+  var b=null;for(var i=0;i<DB.boards.length;i++)if(DB.boards[i].id===g.boardId)b=DB.boards[i];
+  if(!b)b=DB.boards[0];
+  T={g:g,b:b,on:g.setup.map(function(s){return{pid:s.pid,r:s.r,c:s.c,side:s.side,moved:false};}),turn:g.first,sel:-1,moves:[],over:-1,log:[]};
+}
+function checkWin(){
+  var g=T.g,b=T.b,me=T.turn;
+  if(g.win==='captureAll'&&!T.on.some(function(p){return p.side!==me;}))return me;
+  if(g.win==='captureKing'){
+    var oppAlive=false,oppRoyal=false;
+    T.on.forEach(function(p){if(p.side!==me){oppAlive=true;var pt=null;for(var i=0;i<DB.pieces.length;i++)if(DB.pieces[i].id===p.pid)pt=DB.pieces[i];if(pt&&pt.royal)oppRoyal=true;}});
+    if(!oppAlive||!oppRoyal)return me;
+  }
+  if(g.win==='reachRow'){var target=me===0?0:b.rows-1;if(T.on.some(function(p){return p.side===me&&p.r===target;}))return me;}
+  return -1;
+}
+function vTest(){
+  if(!T)tInit();
+  var g=T.g;
+  var banner;
+  if(T.over>=0)banner='<div class="banner red">🏆 <b>'+esc(g.colors[T.over])+'</b> 获胜！<button class="pri" onclick="A.tReset()">再来一局</button></div>';
+  else banner='<div class="banner">当前回合：<b style="color:'+g.hex[T.turn]+'">'+esc(g.colors[T.turn])+'</b><span class="hint">点击己方棋子 → 点击绿色格走子 / 红色格吃子</span></div>';
+  var onMap={};
+  T.on.forEach(function(p,i){onMap[p.r+','+p.c]=i;});
+  var grid=boardGrid(T.b,function(r,c){
+    var cb=cellBase(T.b,r,c),cls=cb.cls,inner=coordTxt(T.b,r,c);
+    var i=onMap[r+','+c];
+    if(i!==undefined){var p=T.on[i];var pt=null;for(var j=0;j<DB.pieces.length;j++)if(DB.pieces[j].id===p.pid)pt=DB.pieces[j];
+      inner='<div class="pc" style="color:'+g.hex[p.side]+'">'+pTok(pt)+'</div>';}
+    if(T.sel>=0&&T.on[T.sel]&&T.on[T.sel].r===r&&T.on[T.sel].c===c)cls+=' sel';
+    for(var k=0;k<T.moves.length;k++){var m=T.moves[k];if(m.r===r&&m.c===c){cls+=m.cap?' cap':' mv';break;}}
+    return '<div class="cell '+cls+'" style="'+cb.style+'" onclick="A.tCell('+r+','+c+')">'+inner+'</div>';
+  });
+  var counts=[0,1].map(function(s){return '<span style="color:'+g.hex[s]+'">'+esc(g.colors[s])+'</span>：'+T.on.filter(function(p){return p.side===s;}).length+' 子';}).join('　');
+  var h=banner+'<div class="split" style="grid-template-columns:1fr 330px"><div class="card boardwrap">'+grid+'</div><div>'
+   +'<div class="card"><b>对局：'+esc(g.name)+'</b><div class="hint" style="margin:6px 0">'+counts+'</div>'
+   +'<div class="row"><button class="pri" onclick="A.tReset()">重新开始</button><button onclick="A.tAI()">🤖 电脑随机走一步</button><button onclick="A.tab(\'game\')">返回设置</button></div></div>'
+   +'<div class="card"><b>走子记录</b><div class="logbox" style="margin-top:8px">'+(T.log.map(esc).join('<br>')||'<span class="hint">尚无走子</span>')+'</div></div>'
+   +'</div></div>';
+  $('#view').innerHTML=h;
+}
+
+/* ============ 控制器 ============ */
+var A={
+ tab:function(t){cur.tab=t;if(t==='test')T=null;render();},
+ /* 棋盘 */
+ bSel:function(id){cur.boardId=id;render();},
+ bNew:function(){var b={id:uid('b'),name:'新棋盘 '+(DB.boards.length+1),rows:8,cols:8,cells:{},ca:'#e6d3ae',cb:'#8a6a45',showCoords:true};DB.boards.push(b);cur.boardId=b.id;saveDB();render();},
+ bDup:function(){var b=curB();var c2=JSON.parse(JSON.stringify(b));c2.id=uid('b');c2.name=b.name+' 副本';DB.boards.push(c2);cur.boardId=c2.id;saveDB();render();},
+ bDel:function(){if(DB.boards.length<=1){alert('至少保留一个棋盘');return;}if(!confirm('确定删除该棋盘？使用它的对局将改用第一个棋盘。'))return;DB.boards=DB.boards.filter(function(x){return x.id!==cur.boardId;});DB.games.forEach(function(g){if(g.boardId===cur.boardId)g.boardId=DB.boards[0].id;});cur.boardId=DB.boards[0].id;saveDB();render();},
+ bSet:function(f,v){var b=curB();b[f]=v;saveDB();render();},
+ bResize:function(){var b=curB();var r=Math.min(19,Math.max(2,parseInt($('#bRows').value)||8));var c=Math.min(19,Math.max(2,parseInt($('#bCols').value)||8));b.rows=r;b.cols=c;Object.keys(b.cells).forEach(function(k){var a=k.split(',');if(+a[0]>=r||+a[1]>=c)delete b.cells[k];});DB.games.forEach(function(g){if(g.boardId===b.id)g.setup=g.setup.filter(function(s){return s.r<r&&s.c<c;});});saveDB();render();},
+ bCell:function(r,c){var b=curB();var k=r+','+c;var cycle={'':'block','block':'void','void':'river','river':''};var nv=cycle[b.cells[k]||''];if(nv)b.cells[k]=nv;else delete b.cells[k];saveDB();render();},
+ /* 棋子 */
+ pSel:function(id){cur.pieceId=id;render();},
+ pNew:function(){var p={id:uid('p'),name:'新棋子',icon:'⭐',img:'',royal:false,moves:[mv(0,1,{cap:1}),mv(0,-1,{cap:1}),mv(1,0,{cap:1}),mv(-1,0,{cap:1})]};DB.pieces.push(p);cur.pieceId=p.id;saveDB();render();},
+ pDup:function(){var p=curP();var c2=JSON.parse(JSON.stringify(p));c2.id=uid('p');c2.name=p.name+' 副本';DB.pieces.push(c2);cur.pieceId=c2.id;saveDB();render();},
+ pDel:function(){if(!confirm('删除棋子「'+curP().name+'」？对局中已放置的该棋子将不显示。'))return;DB.pieces=DB.pieces.filter(function(x){return x.id!==cur.pieceId;});DB.games.forEach(function(g){g.setup=g.setup.filter(function(s){return s.pid!==cur.pieceId;});});cur.pieceId=DB.pieces[0].id;saveDB();render();},
+ pSet:function(f,v){var p=curP();p[f]=v;saveDB();render();},
+ pIcon:function(ch){var p=curP();p.icon=ch;p.img='';saveDB();render();},
+ pClearImg:function(){var p=curP();p.img='';saveDB();render();},
+ pUpload:function(ev){var f=ev.target.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){var p=curP();p.img=rd.result;saveDB();render();};rd.readAsDataURL(f);ev.target.value='';},
+ toggleIcons:function(){var e=$('#iconPanel');e.style.display=e.style.display==='none'?'block':'none';},
+ pdCell:function(r,c){
+  if(r===3&&c===3)return;
+  var p=curP();
+  if(!PD||PD.pid!==p.id)PD={pid:p.id,on:pdPrefill(p)};
+  var ex=null;PD.on.forEach(function(o){if(o.r===r&&o.c===c)ex=o;});
+  if(!ex)PD.on.push({r:r,c:c,side:1});
+  else if(ex.side===1)ex.side=0;
+  else PD.on=PD.on.filter(function(o){return o!==ex;});
+  render();
+ },
+ vCell:function(dx,dy){
+  var p=curP();
+  var idx=-1,spec=-1;
+  p.moves.forEach(function(m,i){if(m.dx===dx&&m.dy===dy){if(m.jump||m.cannon||m.fwd||m.dbl||m.legMode)spec=i;else idx=i;}});
+  if(idx<0&&spec>=0){p.moves.splice(spec,1);saveDB();render();return;}
+  if(idx<0){p.moves.push({dx:dx,dy:dy,repeat:false,mv:true,cap:true,jump:false,cannon:false,fwd:false,dbl:false,legX:0,legY:0,legMode:0});}
+  else{
+    var m=p.moves[idx];
+    if(!m.repeat)m.repeat=true;
+    else if(m.mv&&m.cap)m.cap=false;
+    else if(m.mv&&!m.cap){m.mv=false;m.cap=true;}
+    else p.moves.splice(idx,1);
+  }
+  saveDB();render();
+ },
+ pAddMove:function(){var p=curP();p.moves.push(mv(0,-1,{cap:1}));saveDB();render();},
+ pAddGroup:function(){var p=curP();var k=$('#grpSel').value;MOVE_GROUPS[k].forEach(function(m){p.moves.push(JSON.parse(JSON.stringify(m)));});saveDB();render();},
+ pMove:function(i,f,v){var p=curP();if(f==='dx'||f==='dy'||f==='legX'||f==='legY'){v=parseInt(v)||0;if(v>19)v=19;if(v<-19)v=-19;}if(f==='legMode')v=parseInt(v)||0;p.moves[i][f]=v;saveDB();render();},
+ pMoveDel:function(i){curP().moves.splice(i,1);saveDB();render();},
+ /* 对局 */
+ gSel:function(id){cur.gameId=id;render();},
+ gNew:function(){var g={id:uid('g'),name:'新对局 '+(DB.games.length+1),boardId:DB.boards[0].id,colors:['红方','黑方'],hex:['#e04545','#22262e'],win:'captureKing',first:0,setup:[]};DB.games.push(g);cur.gameId=g.id;saveDB();render();},
+ gDup:function(){var g=curG();var c2=JSON.parse(JSON.stringify(g));c2.id=uid('g');c2.name=g.name+' 副本';DB.games.push(c2);cur.gameId=c2.id;saveDB();render();},
+ gDel:function(){if(DB.games.length<=1){alert('至少保留一个对局');return;}if(!confirm('删除该对局预设？'))return;DB.games=DB.games.filter(function(x){return x.id!==cur.gameId;});cur.gameId=DB.games[0].id;T=null;saveDB();render();},
+ gSet:function(f,v){var g=curG();if(f==='first')v=+v;g[f]=v;saveDB();render();},
+ gBoard:function(id){curG().boardId=id;saveDB();render();},
+ gColor:function(i,v){curG().colors[i]=v;saveDB();render();},
+ gHex:function(i,v){curG().hex[i]=v;saveDB();render();},
+ gPal:function(pid){placeSel.pid=pid;placeSel.erase=false;render();},
+ gSide:function(s){placeSel.side=s;placeSel.erase=false;if(!placeSel.pid&&DB.pieces.length)placeSel.pid=DB.pieces[0].id;render();},
+ gErase:function(){placeSel.erase=!placeSel.erase;render();},
+ gClear:function(){if(confirm('清空所有已放置棋子？')){curG().setup=[];saveDB();render();}},
+ gCell:function(r,c){var g=curG();
+  if(placeSel.erase){g.setup=g.setup.filter(function(s){return !(s.r===r&&s.c===c);});}
+  else{
+    if(!placeSel.pid){if(DB.pieces.length)placeSel.pid=DB.pieces[0].id;else return;}
+    g.setup=g.setup.filter(function(s){return !(s.r===r&&s.c===c);});
+    g.setup.push({pid:placeSel.pid,r:r,c:c,side:placeSel.side});
+  }
+  saveDB();render();},
+ /* 测试 */
+ tReset:function(){T=null;render();},
+ tCell:function(r,c){
+  if(!T||T.over>=0)return;
+  if(T.sel>=0){
+    var m=null;for(var i=0;i<T.moves.length;i++)if(T.moves[i].r===r&&T.moves[i].c===c){m=T.moves[i];break;}
+    if(m){A.tDoMove(m);return;}
+  }
+  var idx=-1;for(var j=0;j<T.on.length;j++)if(T.on[j].r===r&&T.on[j].c===c){idx=j;break;}
+  if(idx>=0&&T.on[idx].side===T.turn){
+    T.sel=idx;
+    var pt=null;for(var k=0;k<DB.pieces.length;k++)if(DB.pieces[k].id===T.on[idx].pid)pt=DB.pieces[k];
+    T.moves=pt?genMoves(T.b,T.on,T.on[idx].r,T.on[idx].c,pt,T.on[idx].side,T.on[idx].moved):[];
+  }else{T.sel=-1;T.moves=[];}
+  render();
+ },
+ tDoMove:function(m){
+  var p=T.on[T.sel];
+  var captured=null;for(var i=0;i<T.on.length;i++){var q=T.on[i];if(q.r===m.r&&q.c===m.c&&q.side!==p.side){captured=q;break;}}
+  var txt=T.g.colors[p.side]+' · '+pName(p.pid)+'　('+p.c+','+p.r+') → ('+m.c+','+m.r+')';
+  if(captured){T.on=T.on.filter(function(q){return q!==captured;});txt+='　✖ 吃 '+pName(captured.pid);}
+  p.r=m.r;p.c=m.c;p.moved=true;
+  T.log.unshift(txt);
+  T.sel=-1;T.moves=[];
+  var w=checkWin();
+  if(w>=0){T.over=w;T.log.unshift('🏆 '+T.g.colors[w]+' 获胜！');}
+  else T.turn=1-T.turn;
+  render();
+ },
+ tAI:function(){
+  if(!T||T.over>=0)return;
+  var all=[];
+  T.on.forEach(function(p,i){
+    if(p.side!==T.turn)return;
+    var pt=null;for(var k=0;k<DB.pieces.length;k++)if(DB.pieces[k].id===p.pid)pt=DB.pieces[k];
+    if(!pt)return;
+    genMoves(T.b,T.on,p.r,p.c,pt,p.side,p.moved).forEach(function(m){all.push({i:i,m:m});});
+  });
+  if(!all.length){T.log.unshift('🤖 无合法着法，回合跳过');T.turn=1-T.turn;render();return;}
+  var pick=all[Math.floor(Math.random()*all.length)];
+  T.sel=pick.i;T.moves=[pick.m];
+  A.tDoMove(pick.m);
+ },
+ /* 数据 */
+ exportDB:function(){
+  var blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='棋类游戏编辑器数据.json';a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+ },
+ importDB:function(ev){
+  var f=ev.target.files[0];if(!f)return;
+  var rd=new FileReader();
+  rd.onload=function(){
+    try{
+      var d=JSON.parse(rd.result);
+      if(!d.boards||!d.pieces||!d.games)throw new Error('格式不正确');
+      DB=d;cur.boardId=DB.boards[0].id;cur.pieceId=DB.pieces[0].id;cur.gameId=DB.games[0].id;T=null;
+      saveDB();render();alert('导入成功！');
+    }catch(e){alert('导入失败：'+e.message);}
+  };
+  rd.readAsText(f);ev.target.value='';
+ },
+ resetDB:function(){
+  if(!confirm('恢复默认预设？你所有的自定义修改将丢失(可先导出备份)。'))return;
+  DB=defaultDB();cur.boardId=DB.boards[0].id;cur.pieceId=DB.pieces[0].id;cur.gameId=DB.games[0].id;T=null;placeSel={pid:null,side:0,erase:false};
+  saveDB();render();
+ }
+};
+window.A=A;
+
+/* ============ 渲染入口 ============ */
+var TABS=[['board','🧩 棋盘编辑'],['piece','♟️ 棋子编辑'],['game','⚔️ 对局设置'],['test','▶ 测试对局']];
+function renderTabs(){
+  $('#tabs').innerHTML=TABS.map(function(t){return '<div class="tab '+(cur.tab===t[0]?'on':'')+'" onclick="A.tab(\''+t[0]+'\')">'+t[1]+'</div>';}).join('');
+}
+function render(){
+  renderTabs();
+  if(cur.tab==='board')vBoard();
+  else if(cur.tab==='piece')vPiece();
+  else if(cur.tab==='game')vGame();
+  else vTest();
+}
+render();
+</script>
+</body>
+</html>

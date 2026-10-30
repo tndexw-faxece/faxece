@@ -727,6 +727,59 @@
             animation: print 0.5s ease;
         }
     </style>
+
+<!-- 浅色/深色模式切换 -->
+<style>
+html[data-theme="dark"] {
+    background-color: #050505;
+}
+html[data-theme="dark"] body {
+    background: #fafafa !important;
+    filter: invert(1) hue-rotate(180deg);
+}
+html[data-theme="dark"] body img,
+html[data-theme="dark"] body iframe,
+html[data-theme="dark"] body video,
+html[data-theme="dark"] body canvas {
+    filter: invert(1) hue-rotate(180deg);
+}
+</style>
+<style>
+html[data-theme="dark"] body {
+    filter: invert(1) hue-rotate(180deg);
+}
+html[data-theme="dark"] body img,
+html[data-theme="dark"] body iframe,
+html[data-theme="dark"] body video,
+html[data-theme="dark"] body canvas {
+    filter: invert(1) hue-rotate(180deg);
+}
+</style>
+<script>
+(function(){
+    var saved = localStorage.getItem('faxece-theme');
+    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var theme = saved || (prefersDark ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+    function updateBtn(btn){ btn.textContent = theme === 'dark' ? '🌙' : '☀️'; btn.title = theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'; }
+    function setup(){
+        var btn = document.createElement('button');
+        btn.className = 'theme-toggle';
+        updateBtn(btn);
+        btn.addEventListener('click', function(){
+            var current = document.documentElement.getAttribute('data-theme') || 'light';
+            theme = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('faxece-theme', theme);
+            updateBtn(btn);
+        });
+        if(document.body){ document.documentElement.appendChild(btn); }
+        else { window.addEventListener('load', function(){ document.documentElement.appendChild(btn); }); }
+    }
+    if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', setup); }
+    else { setup(); }
+})();
+</script>
 </head>
 <body>
     <div class="app" id="app">

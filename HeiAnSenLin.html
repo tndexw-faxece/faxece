@@ -442,6 +442,59 @@ const AudioSys = {
 };
 </script>
 <base target="_blank">
+
+<!-- 浅色/深色模式切换 -->
+<style>
+html[data-theme="light"] {
+    background-color: #fafafa;
+}
+html[data-theme="light"] body {
+    background: #050505 !important;
+    filter: invert(1) hue-rotate(180deg);
+}
+html[data-theme="light"] body img,
+html[data-theme="light"] body iframe,
+html[data-theme="light"] body video,
+html[data-theme="light"] body canvas {
+    filter: invert(1) hue-rotate(180deg);
+}
+</style>
+<style>
+html[data-theme="light"] body {
+    filter: invert(1) hue-rotate(180deg);
+}
+html[data-theme="light"] body img,
+html[data-theme="light"] body iframe,
+html[data-theme="light"] body video,
+html[data-theme="light"] body canvas {
+    filter: invert(1) hue-rotate(180deg);
+}
+</style>
+<script>
+(function(){
+    var saved = localStorage.getItem('faxece-theme');
+    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var theme = saved || (prefersDark ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+    function updateBtn(btn){ btn.textContent = theme === 'dark' ? '🌙' : '☀️'; btn.title = theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'; }
+    function setup(){
+        var btn = document.createElement('button');
+        btn.className = 'theme-toggle';
+        updateBtn(btn);
+        btn.addEventListener('click', function(){
+            var current = document.documentElement.getAttribute('data-theme') || 'light';
+            theme = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('faxece-theme', theme);
+            updateBtn(btn);
+        });
+        if(document.body){ document.documentElement.appendChild(btn); }
+        else { window.addEventListener('load', function(){ document.documentElement.appendChild(btn); }); }
+    }
+    if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', setup); }
+    else { setup(); }
+})();
+</script>
 </head>
 <body>
 <div class="stars"></div>

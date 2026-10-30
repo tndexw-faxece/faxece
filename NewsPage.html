@@ -1,3 +1,66 @@
+<meta charset="UTF-8">
+<!-- 浅色/深色模式切换 -->
+<style>
+.theme-toggle {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 999999;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    background: rgba(128,128,128,0.25);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    transition: transform 0.2s, background 0.2s;
+}
+.theme-toggle:hover { transform: scale(1.1); background: rgba(128,128,128,0.4); }
+</style>
+<style>
+html[data-theme="light"] {
+    background-color: #fafafa;
+}
+html[data-theme="light"] body {
+    background: #050505 !important;
+    filter: invert(1) hue-rotate(180deg);
+}
+html[data-theme="light"] body img,
+html[data-theme="light"] body iframe,
+html[data-theme="light"] body video,
+html[data-theme="light"] body canvas {
+    filter: invert(1) hue-rotate(180deg);
+}
+</style>
+<script>
+(function(){
+    var saved = localStorage.getItem('faxece-theme');
+    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var theme = saved || (prefersDark ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+    function updateBtn(btn){ btn.textContent = theme === 'dark' ? '🌙' : '☀️'; btn.title = theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'; }
+    function setup(){
+        var btn = document.createElement('button');
+        btn.className = 'theme-toggle';
+        updateBtn(btn);
+        btn.addEventListener('click', function(){
+            var current = document.documentElement.getAttribute('data-theme') || 'light';
+            theme = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('faxece-theme', theme);
+            updateBtn(btn);
+        });
+        if(document.body){ document.documentElement.appendChild(btn); }
+        else { window.addEventListener('load', function(){ document.documentElement.appendChild(btn); }); }
+    }
+    if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', setup); }
+    else { setup(); }
+})();
+</script>
+
 <style>
    body{
       background-color: rgb(1, 0, 24);
@@ -73,6 +136,11 @@
 <!--新闻-->
 <div class="news-section">
     <h2>法克西的动态</h2>
+    <div class="news-item">
+        <div class="news-date">2026-10-30</div>
+        <div class="news-title">小更新</div>
+        <p>修复已知bug，添加了浅色、深色模式切换。</p>
+    </div>
     <div class="news-item">
         <div class="news-date">2026-8-29</div>
         <div class="news-title">小更新</div>

@@ -14,8 +14,6 @@
             overflow: hidden;
             color: #e0e0ff;
         }
-
-        /* ===== 左侧导航栏 ===== */
         .sidebar {
             width: 80px;
             background: rgba(0,0,0,0.35);
@@ -58,8 +56,6 @@
             box-shadow: 0 8px 30px rgba(0,212,255,0.35);
         }
         .sidebar-btn svg { width: 22px; height: 22px; fill: currentColor; }
-
-        /* ===== 主内容区 ===== */
         .main {
             flex: 1;
             display: flex;
@@ -82,8 +78,6 @@
             from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        /* ===== 普通 & 进阶 计算器 ===== */
         .calc-container {
             background: rgba(255,255,255,0.04);
             backdrop-filter: blur(24px);
@@ -141,7 +135,6 @@
         .sto.active { background: #ff9500; box-shadow: 0 0 20px rgba(255,149,0,0.4); }
         .const { background: rgba(255,204,0,0.9); color: #0a0a1a; }
         .const:hover { background: #ffcc00; }
-
         .normal-grid { grid-template-columns: repeat(4, 78px); gap: 12px; }
         .normal-calc { max-width: 370px; }
         .advanced-calc { max-width: 430px; }
@@ -175,8 +168,6 @@
         .var-panel.sto-active .var-item:hover { background: rgba(255,149,0,0.3); transform: scale(1.08); }
         .var-name { color: #00e5ff; font-size: 0.75rem; font-weight: 700; margin-bottom: 2px; }
         .var-value { color: rgba(255,255,255,0.55); font-size: 0.62rem; font-family: 'Courier New', monospace; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
-
-        /* ===== 绘图模式 ===== */
         .graph-container {
             display: flex;
             flex-direction: column;
@@ -276,13 +267,78 @@
         }
         .func-tag .remove { cursor: pointer; opacity: 0.5; transition: all 0.2s; font-size: 1rem; }
         .func-tag .remove:hover { opacity: 1; color: #ff3b30; }
-
-        /* 变量滑动条 */
+        .preset-dropdown { position: relative; }
+        .preset-btn {
+            height: 46px;
+            padding: 0 22px;
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            background: linear-gradient(135deg, #ff6b9d, #ff9500);
+            color: white;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .preset-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .preset-menu {
+            position: absolute;
+            top: 52px;
+            left: 0;
+            min-width: 280px;
+            background: rgba(20,20,40,0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            padding: 8px;
+            display: none;
+            z-index: 100;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .preset-menu.show { display: block; }
+        .preset-category {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 10px 12px 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 4px;
+        }
+        .preset-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: rgba(255,255,255,0.85);
+            font-size: 0.85rem;
+        }
+        .preset-item:hover { background: rgba(255,255,255,0.08); }
+        .preset-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        .preset-info { flex: 1; }
+        .preset-name { font-weight: 600; font-size: 0.88rem; }
+        .preset-desc { font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-top: 2px; }
         .var-sliders {
             display: flex;
             flex-wrap: wrap;
             gap: 14px;
-            max-height: 120px;
+            max-height: 160px;
             overflow-y: auto;
             padding-right: 4px;
         }
@@ -294,7 +350,7 @@
             padding: 8px 14px;
             border-radius: 12px;
             border: 1px solid rgba(255,255,255,0.06);
-            min-width: 180px;
+            min-width: 220px;
             flex: 1;
         }
         .var-slider-label {
@@ -303,6 +359,14 @@
             font-size: 0.95rem;
             width: 20px;
             text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 4px;
+            padding: 2px;
+        }
+        .var-slider-label:hover {
+            background: rgba(0,229,255,0.15);
+            color: #fff;
         }
         .var-slider-input {
             flex: 1;
@@ -326,11 +390,73 @@
             color: rgba(255,255,255,0.8);
             font-family: 'Courier New', monospace;
             font-size: 0.85rem;
-            min-width: 50px;
+            min-width: 55px;
             text-align: right;
         }
-
-        /* 多边形统计 */
+        .var-range-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .var-range-modal.show { display: flex; }
+        .var-range-box {
+            background: rgba(20,20,40,0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 28px 32px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            min-width: 320px;
+        }
+        .var-range-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #00e5ff;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .var-range-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .var-range-row label {
+            width: 50px;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.85rem;
+        }
+        .var-range-input {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: #e0e0ff;
+            font-size: 0.95rem;
+            font-family: 'Courier New', monospace;
+            outline: none;
+        }
+        .var-range-input:focus { border-color: #00d4ff; }
+        .var-range-btns {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .var-range-btns button {
+            flex: 1;
+            height: 44px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .btn-cancel { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+        .btn-confirm { background: linear-gradient(135deg, #00d4ff, #7b2cbf); color: white; }
         .poly-stats {
             display: flex;
             gap: 20px;
@@ -372,7 +498,6 @@
         .poly-point-tag.selected { border-color: #00e5ff; background: rgba(0,229,255,0.1); color: #00e5ff; }
         .poly-point-tag .del-point { cursor: pointer; opacity: 0.4; transition: 0.2s; }
         .poly-point-tag .del-point:hover { opacity: 1; color: #ff3b30; }
-
         .graph-canvas-wrap {
             flex: 1;
             background: rgba(0,0,0,0.25);
@@ -397,17 +522,70 @@
             backdrop-filter: blur(8px);
             border: 1px solid rgba(255,255,255,0.08);
         }
-
         @media (max-width: 900px) {
             .sidebar { width: 64px; }
             .sidebar-btn { width: 48px; height: 48px; font-size: 0.55rem; }
             .graph-container { max-width: 100%; }
+            .preset-menu { left: auto; right: 0; min-width: 260px; }
         }
     </style>
+<base target="_blank">
+
+<!-- 浅色/深色模式切换 -->
+<style>
+html[data-theme="light"] {
+    background-color: #fafafa;
+}
+html[data-theme="light"] body {
+    background: #050505 !important;
+    filter: invert(1) hue-rotate(180deg);
+}
+html[data-theme="light"] body img,
+html[data-theme="light"] body iframe,
+html[data-theme="light"] body video,
+html[data-theme="light"] body canvas {
+    filter: invert(1) hue-rotate(180deg);
+}
+</style>
+<style>
+html[data-theme="light"] body {
+    filter: invert(1) hue-rotate(180deg);
+}
+html[data-theme="light"] body img,
+html[data-theme="light"] body iframe,
+html[data-theme="light"] body video,
+html[data-theme="light"] body canvas {
+    filter: invert(1) hue-rotate(180deg);
+}
+</style>
+<script>
+(function(){
+    var saved = localStorage.getItem('faxece-theme');
+    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var theme = saved || (prefersDark ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+    function updateBtn(btn){ btn.textContent = theme === 'dark' ? '🌙' : '☀️'; btn.title = theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'; }
+    function setup(){
+        var btn = document.createElement('button');
+        btn.className = 'theme-toggle';
+        updateBtn(btn);
+        btn.addEventListener('click', function(){
+            var current = document.documentElement.getAttribute('data-theme') || 'light';
+            theme = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('faxece-theme', theme);
+            updateBtn(btn);
+        });
+        if(document.body){ document.documentElement.appendChild(btn); }
+        else { window.addEventListener('load', function(){ document.documentElement.appendChild(btn); }); }
+    }
+    if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', setup); }
+    else { setup(); }
+})();
+</script>
 </head>
 <body>
 
-<!-- 左侧导航 -->
 <nav class="sidebar">
     <button class="sidebar-btn active" onclick="switchMode('normal')" id="btn-normal">
         <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 7h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zM7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zM7 15h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z" fill="currentColor"/></svg>
@@ -511,12 +689,96 @@
                     <div class="mode-tab" onclick="switchGraphMode('polygon')" id="tab-polygon">多边形</div>
                 </div>
 
-                <!-- 函数模式控制区 -->
                 <div id="function-controls">
                     <div class="graph-input-row">
                         <input type="text" class="graph-input" id="graph-input" placeholder="输入函数，如: a*x^2+b*x+c, sin(k*x)" onkeydown="if(event.key==='Enter')addFunction()">
                         <button class="graph-btn btn-draw" onclick="addFunction()">添加函数</button>
                         <button class="graph-btn btn-clear" onclick="clearGraph()">清空</button>
+                        <div class="preset-dropdown">
+                            <button class="preset-btn" onclick="togglePresetMenu()">📐 预设函数 ▾</button>
+                            <div class="preset-menu" id="preset-menu">
+                                <div class="preset-category">经典曲线</div>
+                                <div class="preset-item" onclick="loadPreset('heart')">
+                                    <div class="preset-icon" style="background:linear-gradient(135deg,#ff6b9d,#ff3b30);">❤️</div>
+                                    <div class="preset-info">
+                                        <div class="preset-name">笛卡尔心形线</div>
+                                        <div class="preset-desc">r = a(1 - sinθ) 极坐标心形</div>
+                                    </div>
+                                </div>
+                                <div class="preset-item" onclick="loadPreset('heart2')">
+                                    <div class="preset-icon" style="background:linear-gradient(135deg,#ff6b9d,#af52de);">💖</div>
+                                    <div class="preset-info">
+                                        <div class="preset-name">参数方程心形</div>
+                                        <div class="preset-desc">x=16sin³t, y=13cost-5cos2t...</div>
+                                    </div>
+                                </div>
+                                <div class="preset-item" onclick="loadPreset('butterfly')">
+                                    <div class="preset-icon" style="background:linear-gradient(135deg,#00ff88,#00d4ff);">🦋</div>
+                                    <div class="preset-info">
+                                        <div class="preset-name">蝴蝶曲线</div>
+                                        <div class="preset-desc">极坐标蝴蝶 r = e^(sinθ) - 2cos(4θ)</div>
+                                    </div>
+                                </div>
+                                <div class="preset-item" onclick="loadPreset('rose')">
+                                    <div class="preset-icon" style="background:linear-gradient(135deg,#ffcc00,#ff9500);">🌹</div>
+                                    <div class="preset-info">
+                                        <div class="preset-name">玫瑰线</div>
+                                        <div class="preset-desc">r = a*cos(k*θ) 多瓣玫瑰</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category">几何曲线</div>
+                                <div class="preset-item" onclick="loadPreset('lemniscate')">
+                                    <div class="preset-icon" style="background:linear-gradient(135deg,#5ac8fa,#00d4ff);">∞</div>
+                                    <div class="preset-info">
+                                        <div class="preset-name">双纽线</div>
+                                        <div class="preset-desc">r² = a²cos(2θ) 无穷符号</div>
+                                    </div>
+                                </div>
+                                <div class="preset-item" onclick="loadPreset('astroid')">
+                                    <div class="preset-icon" style="background:linear-gradient(135deg,#af52de,#7b2cbf);">⭐</div>
+                                    <div class="preset-info">
+                                        <div class="preset-name">星形线</div>
+                                        <div class="preset-desc">x = a*cos³t, y = a*sin³t</div>
+                                    </div>
+                                </div>
+                                <div class="preset-item" onclick="loadPreset('spiral')">
+                                    <div class="preset-icon" style="background:linear-gradient(135deg,#00ff88,#5ac8fa);">🌀</div>
+                                    <div class="preset-info">
+                                        <div class="preset-name">阿基米德螺线</div>
+                                        <div class="preset-desc">r = a*θ 等距螺线</div>
+                                    </div>
+                                </div>
+                                <div class="preset-item" onclick="loadPreset('lissajous')">
+                                    <div class="preset-icon" style="background:linear-gradient(135deg,#ff9500,#ffcc00);">〰️</div>
+                                    <div class="preset-info">
+                                        <div class="preset-name">利萨如曲线</div>
+                                        <div class="preset-desc">x=sin(a*t), y=sin(b*t+d)</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category">数学函数</div>
+                                <div class="preset-item" onclick="loadPreset('parabola')">
+                                    <div class="preset-icon" style="background:linear-gradient(135deg,#00d4ff,#5ac8fa);">∪</div>
+                                    <div class="preset-info">
+                                        <div class="preset-name">抛物线</div>
+                                        <div class="preset-desc">y = a*x^2 + b*x + c</div>
+                                    </div>
+                                </div>
+                                <div class="preset-item" onclick="loadPreset('sincos')">
+                                    <div class="preset-icon" style="background:linear-gradient(135deg,#00e5ff,#00ff88);">∿</div>
+                                    <div class="preset-info">
+                                        <div class="preset-name">正弦波叠加</div>
+                                        <div class="preset-desc">y = a*sin(x) + b*sin(k*x)</div>
+                                    </div>
+                                </div>
+                                <div class="preset-item" onclick="loadPreset('gaussian')">
+                                    <div class="preset-icon" style="background:linear-gradient(135deg,#af52de,#ff6b9d);">🔔</div>
+                                    <div class="preset-info">
+                                        <div class="preset-name">高斯分布</div>
+                                        <div class="preset-desc">y = a*e^(-1*(x-b)^2/(2c^2))</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="func-list" id="func-list"></div>
                     <div class="var-sliders" id="var-sliders"></div>
@@ -524,11 +786,10 @@
                         <button class="graph-btn btn-zoom" onclick="zoom(1.4)">放大 +</button>
                         <button class="graph-btn btn-zoom" onclick="zoom(0.7)">缩小 −</button>
                         <button class="graph-btn btn-zoom" onclick="resetView()">重置视图</button>
-                        <span class="graph-hint">支持变量: a-z (除x) · 自动创建滑动条 · 滚轮缩放 · 拖拽平移</span>
+                        <span class="graph-hint">支持变量: a-z (除x) · 点击变量名设置范围 · 滚轮缩放 · 拖拽平移</span>
                     </div>
                 </div>
 
-                <!-- 多边形模式控制区 -->
                 <div id="polygon-controls" style="display:none;">
                     <div class="poly-stats">
                         <div class="poly-stat">
@@ -562,6 +823,32 @@
     </div>
 
 </main>
+
+<div class="var-range-modal" id="var-range-modal">
+    <div class="var-range-box">
+        <div class="var-range-title" id="var-range-title">设置变量范围</div>
+        <div class="var-range-row">
+            <label>最小值</label>
+            <input type="number" class="var-range-input" id="var-min" step="any">
+        </div>
+        <div class="var-range-row">
+            <label>最大值</label>
+            <input type="number" class="var-range-input" id="var-max" step="any">
+        </div>
+        <div class="var-range-row">
+            <label>步长</label>
+            <input type="number" class="var-range-input" id="var-step" step="any">
+        </div>
+        <div class="var-range-row">
+            <label>当前值</label>
+            <input type="number" class="var-range-input" id="var-current" step="any">
+        </div>
+        <div class="var-range-btns">
+            <button class="btn-cancel" onclick="closeVarRangeModal()">取消</button>
+            <button class="btn-confirm" onclick="confirmVarRange()">确定</button>
+        </div>
+    </div>
+</div>
 
 <script>
 /* ==================== 模式切换 ==================== */
@@ -686,22 +973,19 @@ function drawGrid() {
     const w = canvas.width, h = canvas.height;
     const cx = w/2 + offsetX, cy = h/2 + offsetY;
     ctx.clearRect(0,0,w,h);
-    
-    // 网格
+
     ctx.strokeStyle = 'rgba(255,255,255,0.04)';
     ctx.lineWidth = 1;
     const sx = Math.floor((-cx)/scale), ex = Math.ceil((w-cx)/scale);
     const sy = Math.floor((cy-h)/scale), ey = Math.ceil(cy/scale);
     for (let i=sx; i<=ex; i++) { ctx.beginPath(); ctx.moveTo(cx+i*scale,0); ctx.lineTo(cx+i*scale,h); ctx.stroke(); }
     for (let i=sy; i<=ey; i++) { ctx.beginPath(); ctx.moveTo(0,cy-i*scale); ctx.lineTo(w,cy-i*scale); ctx.stroke(); }
-    
-    // 坐标轴
+
     ctx.strokeStyle = 'rgba(255,255,255,0.25)';
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(w,cy); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,h); ctx.stroke();
-    
-    // 刻度
+
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
@@ -711,10 +995,10 @@ function drawGrid() {
 }
 
 /* ==================== 绘图模式 - 函数子模式 ==================== */
-let graphMode = 'function'; // 'function' | 'polygon'
+let graphMode = 'function';
 let graphFuncs = [];
-let graphVars = {}; // 变量当前值
-let graphVarDefs = {}; // 变量定义（默认值等）
+let graphVars = {};
+let graphVarDefs = {};
 
 function switchGraphMode(mode) {
     graphMode = mode;
@@ -722,7 +1006,6 @@ function switchGraphMode(mode) {
     document.getElementById('tab-' + mode).classList.add('active');
     document.getElementById('function-controls').style.display = mode==='function' ? 'block' : 'none';
     document.getElementById('polygon-controls').style.display = mode==='polygon' ? 'block' : 'none';
-    document.getElementById('canvas-wrap').style.cursor = mode==='function' ? 'crosshair' : 'crosshair';
     drawAll();
 }
 
@@ -731,13 +1014,13 @@ function parseGraphExpr(expr) {
         .replace(/π/g,'Math.PI').replace(/\be\b/g,'Math.E')
         .replace(/sin\(/g,'Math.sin(').replace(/cos\(/g,'Math.cos(').replace(/tan\(/g,'Math.tan(')
         .replace(/log\(/g,'Math.log10(').replace(/ln\(/g,'Math.log(')
-        .replace(/sqrt\(/g,'Math.sqrt(').replace(/abs\(/g,'Math.abs(');
+        .replace(/sqrt\(/g,'Math.sqrt(').replace(/abs\(/g,'Math.abs(')
+        .replace(/exp\(/g,'Math.exp(');
 }
 
 function extractVars(expr) {
-    // 提取单字母变量，排除 x 和 e（因为e是常数）
     const used = new Set();
-    const clean = expr.replace(/Math\.\w+/g, '').replace(/\b(sin|cos|tan|log|ln|sqrt|abs|pi|e)\b/gi, '');
+    const clean = expr.replace(/Math\.\w+/g, '').replace(/\b(sin|cos|tan|log|ln|sqrt|abs|exp|pi|e)\b/gi, '');
     const matches = clean.match(/[a-wyz]/gi);
     if (matches) matches.forEach(m => used.add(m.toLowerCase()));
     return Array.from(used);
@@ -759,26 +1042,20 @@ function addFunction() {
     const expr = input.value.trim();
     if (!expr) return;
     const code = parseGraphExpr(expr);
-    // 验证
-    // try {
-    //     const test = evalFunc(code, 1, graphVars);
-    //     if (isNaN(test) && isNaN(evalFunc(code, 0, graphVars))) throw new Error();
-    // } catch(e) { alert('表达式无效，请检查语法'); return; }
-    
+
     const colors = ['#00e5ff', '#ff9500', '#00ff88', '#ff3b30', '#af52de', '#ffcc00', '#ff6b9d', '#5ac8fa'];
     const color = colors[graphFuncs.length % colors.length];
     const fvars = extractVars(expr);
-    
-    // 为新变量创建滑动条
+
     fvars.forEach(v => {
         if (!(v in graphVars)) {
             graphVars[v] = 1;
-            graphVarDefs[v] = { min: -100, max: 100, step: 0.1, default: 1 };
+            graphVarDefs[v] = { min: -10, max: 10, step: 0.1, default: 1 };
             createVarSlider(v);
         }
     });
-    
-    graphFuncs.push({ expr, code, color, vars: fvars });
+
+    graphFuncs.push({ expr, code, color, vars: fvars, isParametric: false });
     input.value = '';
     updateFuncList();
     drawAll();
@@ -786,20 +1063,21 @@ function addFunction() {
 
 function createVarSlider(v) {
     const container = document.getElementById('var-sliders');
-    // 避免重复
     if (document.getElementById('slider-'+v)) return;
-    
+
+    const defs = graphVarDefs[v] || { min: -10, max: 10, step: 0.1, default: 1 };
+
     const item = document.createElement('div');
     item.className = 'var-slider-item';
     item.id = 'slider-wrap-'+v;
     item.innerHTML = `
-        <span class="var-slider-label">${v}</span>
-        <input type="range" class="var-slider-input" id="slider-${v}" min="-100" max="100" step="0.1" value="${graphVars[v]}">
+        <span class="var-slider-label" onclick="openVarRangeModal('${v}')" title="点击设置范围">${v}</span>
+        <input type="range" class="var-slider-input" id="slider-${v}" min="${defs.min}" max="${defs.max}" step="${defs.step}" value="${graphVars[v]}">
         <span class="var-slider-val" id="slider-val-${v}">${graphVars[v]}</span>
-        <span class="remove" style="cursor:pointer;color:#ff3b30;opacity:0.6;font-size:1.1rem;" onclick="removeVar('${v}')">✕</span>
+        <span style="cursor:pointer;color:#ff3b30;opacity:0.6;font-size:1.1rem;" onclick="removeVar('${v}')">✕</span>
     `;
     container.appendChild(item);
-    
+
     const range = item.querySelector('input');
     range.addEventListener('input', (e) => {
         graphVars[v] = parseFloat(e.target.value);
@@ -813,7 +1091,6 @@ function removeVar(v) {
     delete graphVarDefs[v];
     const el = document.getElementById('slider-wrap-'+v);
     if (el) el.remove();
-    // 如果没有任何函数使用此变量，只是移除滑动条；值仍保留在内存中直到刷新
     drawAll();
 }
 
@@ -847,40 +1124,327 @@ function resetView() { scale = 40; offsetX = 0; offsetY = 0; drawAll(); }
 function drawFunctions() {
     const w = canvas.width, h = canvas.height;
     const cx = w/2 + offsetX, cy = h/2 + offsetY;
-    
+
     graphFuncs.forEach(f => {
-        ctx.strokeStyle = f.color;
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        let first = true;
-        for (let px = 0; px <= w; px += 1.5) {
-            const x = (px - cx) / scale;
-            const y = evalFunc(f.code, x, graphVars);
-            if (!isFinite(y)) { first = true; continue; }
-            const py = cy - y * scale;
-            if (py < -2000 || py > h + 2000) { first = true; continue; }
-            if (first) { ctx.moveTo(px, py); first = false; }
-            else ctx.lineTo(px, py);
+        if (f.isParametric) {
+            drawParametric(f);
+        } else {
+            ctx.strokeStyle = f.color;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            let first = true;
+            for (let px = 0; px <= w; px += 1.5) {
+                const x = (px - cx) / scale;
+                const y = evalFunc(f.code, x, graphVars);
+                if (!isFinite(y)) { first = true; continue; }
+                const py = cy - y * scale;
+                if (py < -2000 || py > h + 2000) { first = true; continue; }
+                if (first) { ctx.moveTo(px, py); first = false; }
+                else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
         }
-        ctx.stroke();
     });
 }
 
+function drawParametric(f) {
+    const w = canvas.width, h = canvas.height;
+    const cx = w/2 + offsetX, cy = h/2 + offsetY;
+    const range = f.paramRange || [0, 6.283];
+    const step = f.paramStep || 0.02;
+    const paramVar = f.paramVar || 't';
+
+    ctx.strokeStyle = f.color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    let first = true;
+
+    for (let t = range[0]; t <= range[1]; t += step) {
+        let codeX = f.codeX || f.code;
+        let codeY = f.codeY;
+
+        let cX = codeX;
+        let cY = codeY;
+        for (let v in graphVars) {
+            cX = cX.replace(new RegExp('\\b' + v + '\\b', 'g'), '(' + graphVars[v] + ')');
+            cY = cY.replace(new RegExp('\\b' + v + '\\b', 'g'), '(' + graphVars[v] + ')');
+        }
+        cX = cX.replace(new RegExp('\\b' + paramVar + '\\b', 'g'), '(' + t + ')');
+        cY = cY.replace(new RegExp('\\b' + paramVar + '\\b', 'g'), '(' + t + ')');
+
+        try {
+            const x = new Function('Math', '"use strict"; return (' + cX + ')')(Math);
+            const y = new Function('Math', '"use strict"; return (' + cY + ')')(Math);
+
+            if (!isFinite(x) || !isFinite(y)) { first = true; continue; }
+            const px = cx + x * scale;
+            const py = cy - y * scale;
+            if (px < -2000 || px > w + 2000 || py < -2000 || py > h + 2000) { first = true; continue; }
+
+            if (first) { ctx.moveTo(px, py); first = false; }
+            else ctx.lineTo(px, py);
+        } catch(e) { first = true; }
+    }
+    ctx.stroke();
+}
+
+/* ==================== 预设函数 ==================== */
+const presets = {
+    heart: {
+        name: '笛卡尔心形线',
+        funcs: [
+            { expr: 'a*(1-sin(t))*cos(t)', color: '#ff6b9d' },
+            { expr: 'a*(1-sin(t))*sin(t)', color: '#ff3b30' }
+        ],
+        vars: { a: { min: 0.5, max: 5, step: 0.1, default: 2 } },
+        isParametric: true,
+        paramRange: [0, 6.283],
+        paramStep: 0.02,
+        paramVar: 't'
+    },
+    heart2: {
+        name: '参数方程心形',
+        funcs: [
+            { expr: 'a*(16*sin(t)^3)', color: '#ff6b9d' },
+            { expr: 'a*(13*cos(t)-5*cos(2*t)-2*cos(3*t)-cos(4*t))', color: '#ff3b30' }
+        ],
+        vars: { a: { min: 0.05, max: 0.5, step: 0.01, default: 0.15 } },
+        isParametric: true,
+        paramRange: [0, 6.283],
+        paramStep: 0.02,
+        paramVar: 't'
+    },
+    butterfly: {
+        name: '蝴蝶曲线',
+        funcs: [
+            { expr: 'a*(exp(sin(t))-2*cos(4*t)+sin((2*t-pi)/24)^5)*cos(t)', color: '#00ff88' },
+            { expr: 'a*(exp(sin(t))-2*cos(4*t)+sin((2*t-pi)/24)^5)*sin(t)', color: '#00d4ff' }
+        ],
+        vars: { a: { min: 0.5, max: 5, step: 0.1, default: 2 } },
+        isParametric: true,
+        paramRange: [0, 37.699],
+        paramStep: 0.02,
+        paramVar: 't'
+    },
+    rose: {
+        name: '玫瑰线',
+        funcs: [
+            { expr: 'a*cos(k*t)*cos(t)', color: '#ffcc00' },
+            { expr: 'a*cos(k*t)*sin(t)', color: '#ff9500' }
+        ],
+        vars: { a: { min: 1, max: 10, step: 0.5, default: 5 }, k: { min: 1, max: 8, step: 1, default: 3 } },
+        isParametric: true,
+        paramRange: [0, 6.283],
+        paramStep: 0.01,
+        paramVar: 't'
+    },
+    lemniscate: {
+        name: '双纽线',
+        funcs: [
+            { expr: 'a*sqrt(abs(cos(2*t)))*cos(t)', color: '#5ac8fa' },
+            { expr: 'a*sqrt(abs(cos(2*t)))*sin(t)', color: '#00d4ff' }
+        ],
+        vars: { a: { min: 1, max: 10, step: 0.5, default: 5 } },
+        isParametric: true,
+        paramRange: [0, 6.283],
+        paramStep: 0.01,
+        paramVar: 't'
+    },
+    astroid: {
+        name: '星形线',
+        funcs: [
+            { expr: 'a*cos(t)^3', color: '#af52de' },
+            { expr: 'a*sin(t)^3', color: '#7b2cbf' }
+        ],
+        vars: { a: { min: 1, max: 10, step: 0.5, default: 5 } },
+        isParametric: true,
+        paramRange: [0, 6.283],
+        paramStep: 0.02,
+        paramVar: 't'
+    },
+    spiral: {
+        name: '阿基米德螺线',
+        funcs: [
+            { expr: 'a*t*cos(t)', color: '#00ff88' },
+            { expr: 'a*t*sin(t)', color: '#5ac8fa' }
+        ],
+        vars: { a: { min: 0.1, max: 2, step: 0.1, default: 0.5 } },
+        isParametric: true,
+        paramRange: [0, 25.133],
+        paramStep: 0.02,
+        paramVar: 't'
+    },
+    lissajous: {
+        name: '利萨如曲线',
+        funcs: [
+            { expr: 'a*sin(m*t)', color: '#ff9500' },
+            { expr: 'a*sin(n*t+d)', color: '#ffcc00' }
+        ],
+        vars: { a: { min: 1, max: 8, step: 0.5, default: 4 }, m: { min: 1, max: 8, step: 1, default: 3 }, n: { min: 1, max: 8, step: 1, default: 4 }, d: { min: 0, max: 3.14, step: 0.1, default: 0.79 } },
+        isParametric: true,
+        paramRange: [0, 6.283],
+        paramStep: 0.01,
+        paramVar: 't'
+    },
+    parabola: {
+        name: '抛物线',
+        funcs: [
+            { expr: 'a*x^2+b*x+c', color: '#00d4ff' }
+        ],
+        vars: { a: { min: -3, max: 3, step: 0.1, default: 1 }, b: { min: -5, max: 5, step: 0.5, default: 0 }, c: { min: -5, max: 5, step: 0.5, default: 0 } },
+        isParametric: false
+    },
+    sincos: {
+        name: '正弦波叠加',
+        funcs: [
+            { expr: 'a*sin(x)+b*sin(k*x)', color: '#00e5ff' }
+        ],
+        vars: { a: { min: 0.5, max: 5, step: 0.1, default: 2 }, b: { min: 0.5, max: 5, step: 0.1, default: 1 }, k: { min: 1, max: 10, step: 0.5, default: 3 } },
+        isParametric: false
+    },
+    gaussian: {
+        name: '高斯分布',
+        funcs: [
+            { expr: 'a*exp(-1*(x-b)^2/(2*c^2))', color: '#af52de' }
+        ],
+        vars: { a: { min: 0.5, max: 5, step: 0.1, default: 3 }, b: { min: -5, max: 5, step: 0.5, default: 0 }, c: { min: 0.5, max: 5, step: 0.1, default: 1.5 } },
+        isParametric: false
+    }
+};
+
+function togglePresetMenu() {
+    const menu = document.getElementById('preset-menu');
+    menu.classList.toggle('show');
+}
+
+document.addEventListener('click', function(e) {
+    const dropdown = document.querySelector('.preset-dropdown');
+    if (dropdown && !dropdown.contains(e.target)) {
+        document.getElementById('preset-menu').classList.remove('show');
+    }
+});
+
+function loadPreset(key) {
+    const preset = presets[key];
+    if (!preset) return;
+
+    document.getElementById('preset-menu').classList.remove('show');
+
+    // 清空现有函数
+    graphFuncs = [];
+    updateFuncList();
+
+    // 设置变量
+    for (let v in preset.vars) {
+        const def = preset.vars[v];
+        graphVars[v] = def.default;
+        graphVarDefs[v] = { min: def.min, max: def.max, step: def.step, default: def.default };
+        createVarSlider(v);
+    }
+
+    // 添加函数
+    preset.funcs.forEach((f, idx) => {
+        const code = parseGraphExpr(f.expr);
+        graphFuncs.push({
+            expr: f.expr,
+            code: code,
+            color: f.color,
+            vars: Object.keys(preset.vars),
+            isParametric: preset.isParametric,
+            paramRange: preset.paramRange,
+            paramStep: preset.paramStep,
+            paramVar: preset.paramVar,
+            codeX: preset.isParametric ? parseGraphExpr(preset.funcs[0].expr) : null,
+            codeY: preset.isParametric && preset.funcs[1] ? parseGraphExpr(preset.funcs[1].expr) : null
+        });
+    });
+
+    updateFuncList();
+
+    // 调整视图
+    if (preset.isParametric) {
+        scale = 25;
+        offsetX = 0;
+        offsetY = 0;
+    }
+
+    drawAll();
+}
+
+/* ==================== 变量范围设置 ==================== */
+let editingVar = null;
+
+function openVarRangeModal(v) {
+    editingVar = v;
+    const defs = graphVarDefs[v] || { min: -10, max: 10, step: 0.1, default: 1 };
+
+    document.getElementById('var-range-title').textContent = '设置变量 "' + v + '" 的范围';
+    document.getElementById('var-min').value = defs.min;
+    document.getElementById('var-max').value = defs.max;
+    document.getElementById('var-step').value = defs.step;
+    document.getElementById('var-current').value = graphVars[v];
+
+    document.getElementById('var-range-modal').classList.add('show');
+}
+
+function closeVarRangeModal() {
+    document.getElementById('var-range-modal').classList.remove('show');
+    editingVar = null;
+}
+
+function confirmVarRange() {
+    if (!editingVar) return;
+
+    const min = parseFloat(document.getElementById('var-min').value);
+    const max = parseFloat(document.getElementById('var-max').value);
+    const step = parseFloat(document.getElementById('var-step').value);
+    const current = parseFloat(document.getElementById('var-current').value);
+
+    if (isNaN(min) || isNaN(max) || isNaN(step) || isNaN(current)) {
+        alert('请输入有效的数值');
+        return;
+    }
+
+    if (min >= max) {
+        alert('最小值必须小于最大值');
+        return;
+    }
+
+    if (step <= 0) {
+        alert('步长必须大于0');
+        return;
+    }
+
+    // 更新变量定义
+    graphVarDefs[editingVar] = { min, max, step, default: current };
+
+    // 限制当前值在范围内
+    let newVal = Math.max(min, Math.min(max, current));
+    graphVars[editingVar] = newVal;
+
+    // 更新滑动条
+    const slider = document.getElementById('slider-' + editingVar);
+    const valDisplay = document.getElementById('slider-val-' + editingVar);
+    if (slider) {
+        slider.min = min;
+        slider.max = max;
+        slider.step = step;
+        slider.value = newVal;
+    }
+    if (valDisplay) {
+        valDisplay.textContent = fmt(newVal);
+    }
+
+    closeVarRangeModal();
+    drawAll();
+}
+
 /* ==================== 绘图模式 - 多边形子模式 ==================== */
-let polyPoints = []; // {x, y}
-let polySelected = -1; // 选中的顶点索引
+let polyPoints = [];
+let polySelected = -1;
 let polyPanMode = false;
 let isDragging = false, dragIdx = -1;
 let isPanning = false, panStart = {x:0, y:0};
-
-function switchGraphMode(mode) {
-    graphMode = mode;
-    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
-    document.getElementById('tab-' + mode).classList.add('active');
-    document.getElementById('function-controls').style.display = mode==='function' ? 'block' : 'none';
-    document.getElementById('polygon-controls').style.display = mode==='polygon' ? 'block' : 'none';
-    drawAll();
-}
 
 function clearPolygon() { polyPoints = []; polySelected = -1; updatePolyUI(); drawAll(); }
 function polyUndo() { if(polyPoints.length>0) { polyPoints.pop(); if(polySelected>=polyPoints.length) polySelected=-1; updatePolyUI(); drawAll(); } }
@@ -900,7 +1464,7 @@ function polyPerimeter() {
     let p = 0;
     for (let i=0; i<polyPoints.length; i++) {
         let j = (i+1) % polyPoints.length;
-        if (polyPoints.length < 3 && i === polyPoints.length-1) break; // 不闭合
+        if (polyPoints.length < 3 && i === polyPoints.length-1) break;
         let dx = polyPoints[i].x - polyPoints[j].x;
         let dy = polyPoints[i].y - polyPoints[j].y;
         p += Math.sqrt(dx*dx + dy*dy);
@@ -914,7 +1478,7 @@ function updatePolyUI() {
     document.getElementById('poly-area').textContent = polyPoints.length >= 3 ? fmt(area) : '-';
     document.getElementById('poly-perim').textContent = fmt(perim);
     document.getElementById('poly-count').textContent = polyPoints.length;
-    
+
     const list = document.getElementById('poly-points-list');
     list.innerHTML = '';
     polyPoints.forEach((pt, i) => {
@@ -943,10 +1507,9 @@ function togglePolyPan() {
 
 function drawPolygon() {
     if (polyPoints.length === 0) return;
-    
+
     const cx = canvas.width/2 + offsetX, cy = canvas.height/2 + offsetY;
-    
-    // 填充
+
     if (polyPoints.length >= 3) {
         ctx.fillStyle = 'rgba(0, 255, 136, 0.08)';
         ctx.beginPath();
@@ -957,8 +1520,7 @@ function drawPolygon() {
         ctx.closePath();
         ctx.fill();
     }
-    
-    // 边线
+
     ctx.strokeStyle = 'rgba(0, 255, 136, 0.6)';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -968,8 +1530,7 @@ function drawPolygon() {
     });
     if (polyPoints.length >= 3) ctx.closePath();
     ctx.stroke();
-    
-    // 顶点
+
     polyPoints.forEach((p, i) => {
         const sx = cx + p.x*scale, sy = cy - p.y*scale;
         const isSelected = i === polySelected;
@@ -980,8 +1541,7 @@ function drawPolygon() {
         ctx.strokeStyle = 'rgba(0,0,0,0.5)';
         ctx.lineWidth = 2;
         ctx.stroke();
-        
-        // 标签
+
         ctx.fillStyle = 'rgba(255,255,255,0.7)';
         ctx.font = '11px sans-serif';
         ctx.fillText(`P${i+1}(${fmt(p.x)},${fmt(p.y)})`, sx + 10, sy - 10);
@@ -1003,16 +1563,15 @@ function drawAll() {
 canvas.addEventListener('mousedown', e => {
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    
+
     if (graphMode === 'polygon') {
-        // 检查是否点击了顶点
         const cx = canvas.width/2 + offsetX, cy = canvas.height/2 + offsetY;
         let hit = -1;
         for (let i=polyPoints.length-1; i>=0; i--) {
             const sx = cx + polyPoints[i].x*scale, sy = cy - polyPoints[i].y*scale;
             if (Math.hypot(sx-mx, sy-my) < 12) { hit = i; break; }
         }
-        
+
         if (hit >= 0) {
             if (polyPanMode) {
                 isPanning = true; panStart = {x: mx - offsetX, y: my - offsetY};
@@ -1024,7 +1583,6 @@ canvas.addEventListener('mousedown', e => {
             if (polyPanMode) {
                 isPanning = true; panStart = {x: mx - offsetX, y: my - offsetY};
             } else {
-                // 添加新点
                 const mp = toMath(mx, my);
                 polyPoints.push({x: mp.x, y: mp.y});
                 polySelected = polyPoints.length - 1;
@@ -1033,7 +1591,6 @@ canvas.addEventListener('mousedown', e => {
             }
         }
     } else {
-        // 函数模式：平移
         isPanning = true;
         panStart = {x: mx - offsetX, y: my - offsetY};
     }
@@ -1042,7 +1599,7 @@ canvas.addEventListener('mousedown', e => {
 canvas.addEventListener('mousemove', e => {
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    
+
     if (isDragging && dragIdx >= 0 && graphMode === 'polygon') {
         const mp = toMath(mx, my);
         polyPoints[dragIdx].x = mp.x;
@@ -1071,7 +1628,6 @@ canvas.addEventListener('wheel', e => {
     drawAll();
 }, { passive: false });
 
-// 键盘删除顶点
 document.addEventListener('keydown', e => {
     if (graphMode === 'polygon' && (e.key === 'Delete' || e.key === 'Backspace')) {
         if (polySelected >= 0) {
